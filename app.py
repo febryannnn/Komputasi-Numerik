@@ -283,7 +283,7 @@ class Secant:
         return pd.DataFrame(rows), custom_round(x_new)
 
 
-st.title("Komputasi Numerik")
+st.title("Komputasi Numerik Informatika ITS")
 
 metode = st.selectbox(
     "Pilih Metode",
