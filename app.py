@@ -24,6 +24,8 @@ def Et(true: float, approx: float) -> float:
 def Ea(approx: float, approx_old: float) -> float:
     approx = custom_round(approx)
     approx_old = custom_round(approx_old)
+    if approx == 0:
+        return float('inf') if approx_old != 0 else 0
     return custom_round(abs((approx - approx_old) / approx) * 100)
 
 class BiSection:
@@ -279,11 +281,6 @@ class Secant:
                 "Et (%)": custom_round(et),
                 "Ea (%)": custom_round(ea)
             })
-
-            if x_new == custom_round(x_old_1):
-                stopped_early = True
-                stop_reason = f"Iterasi berhenti di iterasi {i} karena x_(i+1) = x_i = {x_new}, nilai sudah konvergen."
-                break
 
             if i != 1 and 0 <= et < self.tol:
                 break
