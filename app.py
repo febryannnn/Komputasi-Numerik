@@ -256,16 +256,18 @@ class Secant:
         stop_reason = ""
 
         while True:
-            fx0 = custom_round(self.evaluate(self.f, x_old_0))
-            fx1 = custom_round(self.evaluate(self.f, x_old_1))
+            fx0_raw = self.evaluate(self.f, x_old_0)
+            fx1_raw = self.evaluate(self.f, x_old_1)
+            fx0 = custom_round(fx0_raw)
+            fx1 = custom_round(fx1_raw)
             
-            # Cek jika f(x_(i-1)) - f(x_i) = 0, pembagi akan 0
-            if fx0 == fx1:
+            # Cek jika f(x_(i-1)) - f(x_i) = 0, pembagi akan 0 (gunakan nilai raw)
+            if fx0_raw == fx1_raw:
                 stopped_early = True
                 stop_reason = f"Tidak dapat melanjutkan ke iterasi {i + 1} karena f(x_(i-1)) = f(x_i) = {fx0}, pembagi tidak boleh 0."
                 break
 
-            x_new = custom_round(x_old_1 - (fx1 * (x_old_0 - x_old_1)) / (fx0 - fx1))
+            x_new = custom_round(x_old_1 - (fx1_raw * (x_old_0 - x_old_1)) / (fx0_raw - fx1_raw))
 
             et = Et(self.x_true, x_new)
             ea = Ea(x_new, x_old_1)
