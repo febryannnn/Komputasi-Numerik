@@ -1,0 +1,29 @@
+from decimal import Decimal, ROUND_HALF_UP
+import math
+
+
+def custom_round(num: float) -> float:
+    try:
+        num = float(num)
+        if math.isnan(num) or math.isinf(num):
+            return num
+        temp = float(
+            Decimal(str(num)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        )
+        return temp
+    except Exception:
+        return num
+
+
+def Et(true: float, approx: float) -> float:
+    approx = custom_round(approx)
+    true = custom_round(true)
+    return custom_round(abs((true - approx) / true) * 100)
+
+
+def Ea(approx: float, approx_old: float) -> float:
+    approx = custom_round(approx)
+    approx_old = custom_round(approx_old)
+    if approx == 0:
+        return float("inf") if approx_old != 0 else 0
+    return custom_round(abs((approx - approx_old) / approx) * 100)

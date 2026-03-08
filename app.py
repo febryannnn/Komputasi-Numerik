@@ -1,328 +1,29 @@
 import streamlit as st
-import sympy as sp
-import numpy as np
-import pandas as pd
-from decimal import Decimal, ROUND_HALF_UP
-from typing import Literal
-import math
-
-def custom_round(num: float) -> float:
-    try:
-        num = float(num)
-        if math.isnan(num) or math.isinf(num):
-            return num
-        temp = float(Decimal(str(num)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
-        return temp
-    except Exception:
-        return num
-
-def Et(true: float, approx: float) -> float:
-    approx = custom_round(approx)
-    true = custom_round(true)
-    return custom_round(abs((true - approx) / true) * 100)
-
-def Ea(approx: float, approx_old: float) -> float:
-    approx = custom_round(approx)
-    approx_old = custom_round(approx_old)
-    if approx == 0:
-        return float('inf') if approx_old != 0 else 0
-    return custom_round(abs((approx - approx_old) / approx) * 100)
-
-class BiSection:
-    def __init__(self, f: str, xl: float, xu: float, x_true: float, max_iter: float = 10, tol: float = 0.1) -> None:
-        self.x = sp.symbols('x')
-        self.f = sp.sympify(f)
-        self.xl = xl
-        self.xu = xu
-        self.x_true = x_true
-        self.max_iter = max_iter
-        self.tol = tol
-
-    def evaluate(self, expr, val: float) -> float:
-        return float(expr.subs(self.x, val))
-
-    def solve(self):
-        iterasi = 0
-        xr_old = self.xl
-        rows = []
-
-        while True:
-            xr = custom_round((self.xl + self.xu) / 2.0)
-            fxr = custom_round(self.evaluate(self.f, xr))
-            iterasi += 1
-
-            ea = Ea(xr, xr_old)
-            et = Et(self.x_true, xr)
-
-            fl = self.evaluate(self.f, self.xl)
-            fu = self.evaluate(self.f, self.xu)
-
-            rows.append({
-                "Iter": iterasi,
-                "XL": custom_round(self.xl),
-                "XU": custom_round(self.xu),
-                "XR": custom_round(xr),
-                "f(XL)": custom_round(fl),
-                "f(XU)": custom_round(fu),
-                "f(XR)": custom_round(fxr),
-                "Et (%)": et,
-                "Ea (%)": "" if iterasi == 1 else ea
-            })
-
-            if fl * fxr < 0:
-                self.xu = xr
-            else:
-                self.xl = xr
-
-            if iterasi != 1:
-                if 0 <= et < self.tol:
-                    break
-
-            if iterasi >= self.max_iter:
-                break
-
-            xr_old = xr
-
-        return pd.DataFrame(rows), custom_round(xr)
-
-
-class FalsePosition:
-    def __init__(self, f: str, xl: float, xu: float, x_true: float, max_iter: float = 10, tol: float = 0.1) -> None:
-        self.x = sp.symbols('x')
-        self.f = sp.sympify(f)
-        self.xl = xl
-        self.xu = xu
-        self.x_true = x_true
-        self.max_iter = max_iter
-        self.tol = tol
-
-    def evaluate(self, expr, val: float) -> float:
-        return float(expr.subs(self.x, val))
-
-    def solve(self):
-        iterasi = 0
-        xr_old = self.xl
-        rows = []
-
-        while True:
-            fl = custom_round(self.evaluate(self.f, self.xl))
-            fu = custom_round(self.evaluate(self.f, self.xu))
-            xr = custom_round(self.xu - (fu * (self.xl - self.xu)) / (fl - fu))
-            fxr = custom_round(self.evaluate(self.f, xr))
-            iterasi += 1
-
-            ea = Ea(xr, xr_old)
-            et = Et(self.x_true, xr)
-
-            rows.append({
-                "Iter": iterasi,
-                "XL": custom_round(self.xl),
-                "XU": custom_round(self.xu),
-                "XR": custom_round(xr),
-                "f(XL)": fl,
-                "f(XU)": fu,
-                "Et (%)": et,
-                "Ea (%)": "" if iterasi == 1 else ea
-            })
-
-            if fl * fxr < 0:
-                self.xu = xr
-            else:
-                self.xl = xr
-
-            if iterasi != 1:
-                if 0 <= et < self.tol:
-                    break
-
-            if iterasi >= self.max_iter:
-                break
-
-            xr_old = xr
-
-        return pd.DataFrame(rows), custom_round(xr)
-
-
-class FixedPoint:
-    def __init__(self, f: str, x0: float, x_true: float, max_iter: float = 10, tol: float = 0.1) -> None:
-        self.x = sp.symbols('x')
-        self.f = sp.sympify(f)
-        self.x0 = x0
-        self.x_true = x_true
-        self.max_iter = max_iter
-        self.tol = tol
-
-    def evaluate(self, expr, val: float) -> float:
-        return float(expr.subs(self.x, val))
-
-    def solve(self):
-        iterasi = 0
-        x_old = self.x0
-        rows = []
-
-        while True:
-            x_new = self.evaluate(self.f, x_old)
-            iterasi += 1
-
-            ea = Ea(x_new, x_old)
-            et = Et(self.x_true, x_new)
-
-            rows.append({
-                "Iter": iterasi,
-                "x_i": custom_round(x_old),
-                "x_(i+1)": custom_round(x_new),
-                "Et (%)": et,
-                "Ea (%)": ea
-            })
-
-            if iterasi != 1:
-                if 0 <= et < self.tol:
-                    break
-
-            if iterasi >= self.max_iter:
-                break
-
-            x_old = x_new
-
-        return pd.DataFrame(rows), custom_round(x_old)
-
-
-class NewtonRaphson:
-    def __init__(self, f: str, x0: float, x_true: float, max_iter: float = 10, tol: float = 0.1) -> None:
-        self.x = sp.symbols('x')
-        self.f = sp.sympify(f)
-        self.df = sp.diff(self.f, self.x)
-        self.x0 = x0
-        self.x_true = x_true
-        self.max_iter = max_iter
-        self.tol = tol
-
-    def evaluate(self, expr, val: float) -> float:
-        return float(expr.subs(self.x, val))
-
-    def solve(self):
-        i = 0
-        x_old = self.x0
-        rows = []
-
-        while True:
-            fx = custom_round(self.evaluate(self.f, x_old))
-            dfx = custom_round(self.evaluate(self.df, x_old))
-            x_new = custom_round(x_old - fx / dfx)
-
-            et = Et(self.x_true, x_new)
-            ea = Ea(x_new, x_old)
-
-            i += 1
-            rows.append({
-                "Iter": i,
-                "x_i": custom_round(x_old),
-                "f(x_i)": fx,
-                "f'(x_i)": dfx,
-                "x_(i+1)": x_new,
-                "Et (%)": custom_round(et),
-                "Ea (%)": custom_round(ea)
-            })
-
-            if i != 1 and 0 <= et < self.tol:
-                break
-
-            if i >= self.max_iter:
-                break
-
-            x_old = x_new
-
-        return pd.DataFrame(rows), custom_round(x_new)
-
-
-class Secant:
-    def __init__(self, f: str, x0: float, x1: float, x_true: float, max_iter: float = 10, tol: float = 0.1) -> None:
-        self.x = sp.symbols('x')
-        self.f = sp.sympify(f)
-        self.x0 = x0
-        self.x1 = x1
-        self.x_true = x_true
-        self.max_iter = max_iter
-        self.tol = tol
-
-    def evaluate(self, expr, val: float) -> float:
-        return float(expr.subs(self.x, val))
-
-    def solve(self):
-        i = 0
-        x_old_0 = self.x0
-        x_old_1 = self.x1
-        rows = []
-        stopped_early = False
-        stop_reason = ""
-
-        while True:
-            fx0_raw = self.evaluate(self.f, x_old_0)
-            fx1_raw = self.evaluate(self.f, x_old_1)
-            fx0 = custom_round(fx0_raw)
-            fx1 = custom_round(fx1_raw)
-            
-            # Cek jika f(x_(i-1)) - f(x_i) = 0, pembagi akan 0 (gunakan nilai raw)
-            if fx0_raw == fx1_raw:
-                stopped_early = True
-                stop_reason = f"Tidak dapat melanjutkan ke iterasi {i + 1} karena f(x_(i-1)) = f(x_i) = {fx0}, pembagi tidak boleh 0."
-                break
-
-            x_new = custom_round(x_old_1 - (fx1_raw * (x_old_0 - x_old_1)) / (fx0_raw - fx1_raw))
-
-            et = Et(self.x_true, x_new)
-            ea = Ea(x_new, x_old_1)
-
-            i += 1
-            rows.append({
-                "Iter": i,
-                "x_(i-1)": custom_round(x_old_0),
-                "x_i": custom_round(x_old_1),
-                "f(x_(i-1))": fx0,
-                "f(x_i)": fx1,
-                "x_(i+1)": x_new,
-                "Et (%)": custom_round(et),
-                "Ea (%)": custom_round(ea)
-            })
-
-            if i != 1 and 0 <= et < self.tol:
-                break
-
-            if i >= self.max_iter:
-                break
-
-            x_old_0 = x_old_1
-            x_old_1 = x_new
-
-        result = custom_round(x_old_1) if stopped_early else custom_round(x_new)
-        return pd.DataFrame(rows), result, stopped_early, stop_reason
+from method import BiSection, FalsePosition, FixedPoint, NewtonRaphson, Secant
 
 
 st.title("Komputasi Numerik Informatika ITS")
 
 metode = st.selectbox(
     "Pilih Metode",
-    ["BiSection", "FalsePosition", "FixedPoint", "NewtonRaphson", "Secant"]
+    ["Bi Section", "False Position", "Fixed Point", "Newton Raphson", "Secant"],
 )
 
-st.subheader("Bangun Fungsi")
+st.subheader("Buat Fungsi")
 
-mode_input = st.radio(
-    "Mode Input",
-    ["Manual", "Builder Fleksibel"]
-)
+mode_input = st.radio("Mode Input", ["Manual", "Builder Fleksibel"])
 
 if mode_input == "Manual":
     fungsi = st.text_input(
-        "Masukkan fungsi f(x)",
-        "10*x**3 - 220*x**2 - 630*x + 3600"
+        (
+            "Masukkan fungsi f(x)"
+            if metode != "Fixed Point"
+            else "Masukkan fungsi x_(i+1)"
+        ),
+        "10*x**3 - 220*x**2 - 630*x + 3600",
     )
 else:
-    jumlah_suku = st.number_input(
-        "Jumlah suku",
-        min_value=1,
-        max_value=10,
-        value=3
-    )
+    jumlah_suku = st.number_input("Jumlah suku", min_value=1, max_value=10, value=3)
 
     terms = []
 
@@ -332,19 +33,11 @@ else:
         col1, col2 = st.columns(2)
 
         with col1:
-            coef = st.number_input(
-                f"Koefisien",
-                value=1.0,
-                key=f"coef_{i}"
-            )
+            coef = st.number_input(f"Koefisien", value=1.0, key=f"coef_{i}")
 
         with col2:
             pangkat = st.number_input(
-                f"Pangkat x",
-                min_value=0,
-                max_value=20,
-                value=1,
-                key=f"pow_{i}"
+                f"Pangkat x", min_value=0, max_value=20, value=1, key=f"pow_{i}"
             )
 
         if coef != 0:
@@ -366,15 +59,15 @@ x_true = st.number_input("Nilai true", value=24.0)
 max_iter = st.number_input("Maksimum Iterasi", value=10)
 tol = st.number_input("Toleransi (%)", value=0.1)
 
-if metode in ["BiSection", "FalsePosition"]:
+if metode in ["Bi Section", "False Position"]:
     xl = st.number_input("Batas bawah (xl)", value=18.0)
     xu = st.number_input("Batas atas (xu)", value=37.0)
 
-elif metode == "FixedPoint":
+elif metode == "Fixed Point":
     x0 = st.number_input("Nilai awal (x0)", value=20.0)
     lambda_val = 0.0001
 
-elif metode == "NewtonRaphson":
+elif metode == "Newton Raphson":
     x0 = st.number_input("Nilai awal (x0)", value=20.0)
 
 elif metode == "Secant":
@@ -382,31 +75,40 @@ elif metode == "Secant":
     x1 = st.number_input("x1", value=37.0)
 
 if st.button("Hitung"):
-    if metode == "BiSection":
+    if metode == "Bi Section":
         solver = BiSection(fungsi, xl, xu, x_true, max_iter, tol)
-        df, akar = solver.solve()
+        df, steps, akar, err = solver.solve()
 
-    elif metode == "FalsePosition":
+    elif metode == "False Position":
         solver = FalsePosition(fungsi, xl, xu, x_true, max_iter, tol)
-        df, akar = solver.solve()
+        df, steps, akar, err = solver.solve()
 
-    elif metode == "FixedPoint":
-        g_fungsi = f"x - ({fungsi})*{lambda_val}"
-        solver = FixedPoint(g_fungsi, x0, x_true, max_iter, tol)
-        df, akar = solver.solve()
+    elif metode == "Fixed Point":
+        solver = FixedPoint(fungsi, x0, x_true, max_iter, tol)
+        df, steps, akar, err = solver.solve()
 
-    elif metode == "NewtonRaphson":
+    elif metode == "Newton Raphson":
         solver = NewtonRaphson(fungsi, x0, x_true, max_iter, tol)
-        df, akar = solver.solve()
+        df, steps, akar, err = solver.solve()
 
     elif metode == "Secant":
         solver = Secant(fungsi, x0, x1, x_true, max_iter, tol)
-        df, akar, stopped_early, stop_reason = solver.solve()
+        df, steps, akar, err = solver.solve()
 
     st.subheader("Hasil Iterasi")
     st.dataframe(df, use_container_width=True, hide_index=True)
-    
-    if metode == "Secant" and stopped_early:
-        st.warning(stop_reason)
-    
+
+    if err is not None:
+        st.warning(err)
+
+    st.divider()
+
+    st.subheader("Langkah-Langkah Perhitungan")
+    for i in range(len(steps)):
+        st.markdown(steps[i])
+        if i != len(steps) - 1:
+            st.space("medium")
+
+    st.divider()
+
     st.success(f"Akar pendekatan: {akar}")
