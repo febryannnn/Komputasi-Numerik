@@ -250,10 +250,19 @@ class Secant:
         x_old_0 = self.x0
         x_old_1 = self.x1
         rows = []
+        stopped_early = False
+        stop_reason = ""
 
         while True:
             fx0 = custom_round(self.evaluate(self.f, x_old_0))
             fx1 = custom_round(self.evaluate(self.f, x_old_1))
+            
+            # Cek jika f(x_(i-1)) == f(x_i), pembagi akan 0
+            if fx0 == fx1:
+                stopped_early = True
+                stop_reason = f"Iterasi berhenti di iterasi {i} karena f(x_(i-1)) = f(x_i) = {fx0}, pembagi tidak boleh 0."
+                break
+
             x_new = custom_round(x_old_1 - (fx1 * (x_old_0 - x_old_1)) / (fx0 - fx1))
 
             et = Et(self.x_true, x_new)
@@ -280,7 +289,8 @@ class Secant:
             x_old_0 = x_old_1
             x_old_1 = x_new
 
-        return pd.DataFrame(rows), custom_round(x_new)
+        result = custom_round(x_old_1) if stopped_early else custom_round(x_new)
+        return pd.DataFrame(rows), result, stopped_early, stop_reason
 
 
 st.title("Komputasi Numerik Informatika ITS")
@@ -387,8 +397,12 @@ if st.button("Hitung"):
 
     elif metode == "Secant":
         solver = Secant(fungsi, x0, x1, x_true, max_iter, tol)
-        df, akar = solver.solve()
+        df, akar, stopped_early, stop_reason = solver.solve()
 
     st.subheader("Hasil Iterasi")
     st.dataframe(df, use_container_width=True, hide_index=True)
+    
+    if metode == "Secant" and stopped_early:
+        st.warning(stop_reason)
+    
     st.success(f"Akar pendekatan: {akar}")
