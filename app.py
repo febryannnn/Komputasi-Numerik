@@ -257,10 +257,10 @@ class Secant:
             fx0 = custom_round(self.evaluate(self.f, x_old_0))
             fx1 = custom_round(self.evaluate(self.f, x_old_1))
             
-            # Cek jika f(x_(i-1)) == f(x_i), pembagi akan 0
+            # Cek jika f(x_(i-1)) - f(x_i) = 0, pembagi akan 0
             if fx0 == fx1:
                 stopped_early = True
-                stop_reason = f"Iterasi berhenti di iterasi {i} karena f(x_(i-1)) = f(x_i) = {fx0}, pembagi tidak boleh 0."
+                stop_reason = f"Tidak dapat melanjutkan ke iterasi {i + 1} karena f(x_(i-1)) = f(x_i) = {fx0}, pembagi tidak boleh 0."
                 break
 
             x_new = custom_round(x_old_1 - (fx1 * (x_old_0 - x_old_1)) / (fx0 - fx1))
@@ -279,6 +279,11 @@ class Secant:
                 "Et (%)": custom_round(et),
                 "Ea (%)": custom_round(ea)
             })
+
+            if x_new == custom_round(x_old_1):
+                stopped_early = True
+                stop_reason = f"Iterasi berhenti di iterasi {i} karena x_(i+1) = x_i = {x_new}, nilai sudah konvergen."
+                break
 
             if i != 1 and 0 <= et < self.tol:
                 break
