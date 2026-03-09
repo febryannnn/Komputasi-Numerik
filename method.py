@@ -36,12 +36,15 @@ class BiSection:
             xr = custom_round((self.xl + self.xu) / 2.0)
             fxr = custom_round(self.evaluate(self.f, xr))
             iterasi += 1
+            try:
+                ea = Ea(xr, xr_old)
+                et = Et(self.x_true, xr)
+            except ValueError:
+                err = f"**Error**: Angka tidak valid pada perhitungan error pada iterasi {iterasi}"
+                break
 
-            ea = Ea(xr, xr_old)
-            et = Et(self.x_true, xr)
-
-            fl = self.evaluate(self.f, self.xl)
-            fu = self.evaluate(self.f, self.xu)
+            fl = custom_round(self.evaluate(self.f, self.xl))
+            fu = custom_round(self.evaluate(self.f, self.xu))
 
             rows.append(
                 {
@@ -49,9 +52,9 @@ class BiSection:
                     "XL": custom_round(self.xl),
                     "XU": custom_round(self.xu),
                     "XR": custom_round(xr),
-                    "f(XL)": custom_round(fl),
-                    "f(XU)": custom_round(fu),
-                    "f(XR)": custom_round(fxr),
+                    "f(XL)": fl,
+                    "f(XU)": fu,
+                    "f(XR)": fxr,
                     "Et (%)": et,
                     "Ea (%)": None if iterasi == 1 else ea,
                 }
@@ -59,10 +62,11 @@ class BiSection:
 
             step = f"**Iterasi {iterasi}:**\n\n"
             step += "$$\n\\begin{aligned}\n"
-            step += f"x_r &= \\frac{{x_l + x_u}}{{2}} = \\frac{{{custom_round(self.xl)} + {custom_round(self.xu)}}}{{2}} = {xr} \\\\\n"
             step += f"f(x_l) &= {fl} \\\\\n"
-            step += f"f(x_r) &= {fxr}\n"
-            step += "\\end{aligned}\n$$\n\n"
+            step += f"f(x_u) &= {fu} \\\\[1em]\n"
+            step += f"x_r &= \\frac{{x_l + x_u}}{{2}} = \\frac{{{custom_round(self.xl)} + {custom_round(self.xu)}}}{{2}} = {xr} \\\\[1em]\n"
+            step += f"f(x_r) &= {fxr} \n"
+            step += "\\end{aligned}\n$$ \n\n"
 
             error = []
             error.append(
@@ -74,7 +78,7 @@ class BiSection:
                 )
 
             step += "$$\n\\begin{aligned}\n"
-            step += " \\\\\n".join(error)
+            step += " \\\\[0.5em]\n".join(error)
             step += "\n\\end{aligned}\n$$\n\n"
 
             xr_old = xr
@@ -140,15 +144,19 @@ class FalsePosition:
 
             try:
                 xr = custom_round(self.xu - (fu * (self.xl - self.xu)) / (fl - fu))
-            except ZeroDivisionError:
-                err = f"**Error**: Pembagian dengan nol (fl - fu = 0) terjadi pada iterasi ke-{iterasi}."
+            except ValueError:
+                err = f"**Error**: Pembagian dengan nol (f(xl) - f(xu) = 0) terjadi pada iterasi ke-{iterasi}."
                 break
 
             fxr = custom_round(self.evaluate(self.f, xr))
             iterasi += 1
 
-            ea = Ea(xr, xr_old)
-            et = Et(self.x_true, xr)
+            try:
+                ea = Ea(xr, xr_old)
+                et = Et(self.x_true, xr)
+            except ValueError:
+                err = f"**Error**: Angka tidak valid pada perhitungan error pada iterasi {iterasi}"
+                break
 
             rows.append(
                 {
@@ -166,9 +174,9 @@ class FalsePosition:
 
             step = f"**Iterasi {iterasi}:**\n\n"
             step += "$$\n\\begin{aligned}\n"
-
-            step += f"x_r &= x_u - \\frac{{f(x_u) \\cdot (x_l - x_u)}}{{f(x_l) - f(x_u)}} = {custom_round(self.xu)} - \\frac{{ {fu} \\cdot ({custom_round(self.xl)} - ({custom_round(self.xu)}))}}{{{fl} - ({fu})}} = {xr} \\\\\n"
             step += f"f(x_l) &= {fl} \\\\\n"
+            step += f"f(x_u) &= {fu} \\\\[1em]\n"
+            step += f"x_r &= x_u - \\frac{{f(x_u) \\cdot (x_l - x_u)}}{{f(x_l) - f(x_u)}} = {custom_round(self.xu)} - \\frac{{ {fu} \\cdot ({custom_round(self.xl)} - ({custom_round(self.xu)}))}}{{{fl} - ({fu})}} = {xr} \\\\[1em]\n"
             step += f"f(x_r) &= {fxr}\n"
             step += "\\end{aligned}\n$$\n\n"
 
@@ -182,7 +190,7 @@ class FalsePosition:
                 )
 
             step += "$$\n\\begin{aligned}\n"
-            step += " \\\\\n".join(error)
+            step += " \\\\[0.5em]\n".join(error)
             step += "\n\\end{aligned}\n$$\n\n"
 
             xr_old = xr
@@ -237,20 +245,31 @@ class FixedPoint:
         err = None
 
         while True:
-            x_new = self.evaluate(self.f, x_old)
+            x_old = custom_round(x_old)
+            try:
+                x_new = custom_round(self.evaluate(self.f, x_old))
+            except Exception:
+                err = f"**Error**: Angka tidak valid pada perhitungan x pada iterasi {iterasi + 1}."
+                break
+
             iterasi += 1
 
-            x_old_rounded = custom_round(x_old)
-            x_new_rounded = custom_round(x_new)
+            if x_new > float(1e6) or x_new < float(-1e6):
+                err = f"**Error**: x_{iterasi} melebihi batas maksimum (1 Juta)."
+                break
 
-            ea = Ea(x_new, x_old)
-            et = Et(self.x_true, x_new)
+            try:
+                ea = Ea(x_new, x_old)
+                et = Et(self.x_true, x_new)
+            except ValueError:
+                err = f"**Error**: Angka tidak valid pada perhitungan error pada iterasi {iterasi}"
+                break
 
             rows.append(
                 {
                     "Iterasi": iterasi,
-                    "x_i": x_old_rounded,
-                    "x_(i+1)": x_new_rounded,
+                    "x_i": x_old,
+                    "x_(i+1)": x_new,
                     "Et (%)": et,
                     "Ea (%)": None if iterasi == 1 else ea,
                 }
@@ -258,27 +277,27 @@ class FixedPoint:
 
             step = f"**Iterasi {iterasi}:**\n\n"
 
-            val_str = f"({x_old_rounded})" if x_old_rounded < 0 else str(x_old_rounded)
+            val_str = f"({x_old})" if x_old < 0 else str(x_old)
 
             substituted_expr = self.f.subs(self.x, sp.Symbol(val_str))
             expr_latex = sp.latex(substituted_expr)
 
             step += "$$\n\\begin{aligned}\n"
-            step += f"x_{{{iterasi}}} &= {expr_latex} = {x_new_rounded}\n"
+            step += f"x_{{{iterasi}}} &= {expr_latex} = {x_new}\n"
             step += "\\end{aligned}\n$$\n\n"
 
             error = []
             error.append(
-                f"E_t &= \\left| \\frac{{{self.x_true} - ({x_new_rounded})}}{{{self.x_true}}} \\right| \\times 100\\% = {et}\\%"
+                f"E_t &= \\left| \\frac{{{self.x_true} - ({x_new})}}{{{self.x_true}}} \\right| \\times 100\\% = {et}\\%"
             )
 
             if iterasi > 1:
                 error.append(
-                    f"E_a &= \\left| \\frac{{{x_new_rounded} - ({x_old_rounded})}}{{{x_new_rounded}}} \\right| \\times 100\\% = {ea}\\%"
+                    f"E_a &= \\left| \\frac{{{x_new} - ({x_old})}}{{{x_new}}} \\right| \\times 100\\% = {ea}\\%"
                 )
 
             step += "$$\n\\begin{aligned}\n"
-            step += " \\\\\n".join(error)
+            step += " \\\\[0.5em]\n".join(error)
             step += "\n\\end{aligned}\n$$\n\n"
 
             x_old = x_new
@@ -326,13 +345,17 @@ class NewtonRaphson:
             fx = custom_round(self.evaluate(self.f, x_old))
             dfx = custom_round(self.evaluate(self.df, x_old))
             try:
-                x_new = custom_round(x_old - fx / dfx)
+                x_new = custom_round(x_old - (fx / dfx))
             except ZeroDivisionError:
                 err = f"**Error**: Pembagian dengan nol f'(x_{i}) = 0 terjadi pada iterasi ke-{i}."
                 break
 
-            et = Et(self.x_true, x_new)
-            ea = Ea(x_new, x_old)
+            try:
+                ea = Ea(x_new, x_old)
+                et = Et(self.x_true, x_new)
+            except ValueError:
+                err = f"**Error**: Angka tidak valid pada perhitungan error pada iterasi {i}"
+                break
 
             rows.append(
                 {
@@ -349,7 +372,7 @@ class NewtonRaphson:
             step = f"**Iterasi {i}:**\n\n"
             step += "$$\n\\begin{aligned}\n"
             step += f"f(x_{{{i - 1}}}) &= {fx} \\\\\n"
-            step += f"f'(x_{{{i - 1}}}) &= {dfx} \\\\\n"
+            step += f"f'(x_{{{i - 1}}}) &= {dfx} \\\\[1em]\n"
             step += f"x_{{{i}}} &= x_{{{i - 1}}} - \\frac{{f(x_{{{i - 1}}})}}{{f'(x_{{{i - 1}}})}} = {x_new} \n"
             step += "\\end{aligned}\n$$\n\n"
 
@@ -362,7 +385,7 @@ class NewtonRaphson:
             )
 
             step += "$$\n\\begin{aligned}\n"
-            step += " \\\\\n".join(error)
+            step += " \\\\[0.5em]\n".join(error)
             step += "\n\\end{aligned}\n$$\n\n"
 
             steps.append(step)
@@ -424,8 +447,12 @@ class Secant:
                 err = f"**Error**: Pembagian dengan nol terjadi f(x_{i - 2}) sama dengan f(x_{i - 1}) pada iterasi ke-{i}."
                 break
 
-            et = Et(self.x_true, x_new)
-            ea = Ea(x_new, x_old_1)
+            try:
+                ea = Ea(x_new, x_old_1)
+                et = Et(self.x_true, x_new)
+            except ValueError:
+                err = f"**Error**: Angka tidak valid pada perhitungan error pada iterasi {i}"
+                break
 
             rows.append(
                 {
@@ -443,7 +470,7 @@ class Secant:
             step = f"**Iterasi {i}:**\n\n"
             step += "$$\n\\begin{aligned}\n"
             step += f"f(x_{{{i - 2}}}) &= {fx0} \\\\\n"
-            step += f"f(x_{{{i - 1}}}) &= {fx1} \\\\\n"
+            step += f"f(x_{{{i - 1}}}) &= {fx1} \\\\[1em]\n"
             step += f"x_{{{i}}} &= x_{{{i - 1}}} - \\frac{{f(x_{{{i - 1}}}) \\cdot (x_{{{i - 2}}} - x_{{{i - 1}}})}}{{f(x_{{{i - 2}}}) - f(x_{{{i - 1}}})}} = {x_new} \n"
             step += "\\end{aligned}\n$$\n\n"
 
@@ -456,7 +483,7 @@ class Secant:
             )
 
             step += "$$\n\\begin{aligned}\n"
-            step += " \\\\\n".join(error)
+            step += " \\\\[0.5em]\n".join(error)
             step += "\n\\end{aligned}\n$$\n\n"
 
             steps.append(step)

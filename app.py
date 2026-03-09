@@ -2,7 +2,7 @@ import streamlit as st
 from method import BiSection, FalsePosition, FixedPoint, NewtonRaphson, Secant
 
 
-st.title("Komputasi Numerik Informatika ITS")
+st.title("Komputasi Numerik Informatika ITS 📐")
 
 metode = st.selectbox(
     "Pilih Metode",
@@ -103,7 +103,7 @@ if st.button("Hitung"):
 
     st.divider()
 
-    st.subheader("Langkah-Langkah Perhitungan")
+    st.subheader("Langkah-Langkah Perhitungan 🕵️‍♂️")
     for i in range(len(steps)):
         st.markdown(steps[i])
         if i != len(steps) - 1:

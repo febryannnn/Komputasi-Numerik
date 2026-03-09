@@ -6,13 +6,13 @@ def custom_round(num: float) -> float:
     try:
         num = float(num)
         if math.isnan(num) or math.isinf(num):
-            return num
+            raise ValueError("Invalid number")
         temp = float(
             Decimal(str(num)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         )
         return temp
     except Exception:
-        return num
+        raise ValueError("Invalid number")
 
 
 def Et(true: float, approx: float) -> float:
