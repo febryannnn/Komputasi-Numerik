@@ -2,6 +2,7 @@ from typing import Literal
 import sympy as sp
 import pandas as pd
 from utils import custom_round, Ea, Et
+import numpy as np
 
 
 class BiSection:
@@ -11,7 +12,7 @@ class BiSection:
         xl: float,
         xu: float,
         x_true: float,
-        max_iter: float = 10,
+        max_iter: int = 10,
         tol: float = 0.1,
     ) -> None:
         self.x = sp.symbols("x")
@@ -33,13 +34,19 @@ class BiSection:
         steps = []
         err = None
         while True:
+            fl = custom_round(self.evaluate(self.f, self.xl))
+            fu = custom_round(self.evaluate(self.f, self.xu))
+            if fl * fu > 0:
+                err = f"**Error**: Pemilihan batas interval tidak valid (f(xl) dan f(xu) memiliki tanda yang sama)."
+                break
+
             xr = custom_round((self.xl + self.xu) / 2.0)
             fxr = custom_round(self.evaluate(self.f, xr))
             iterasi += 1
             try:
                 ea = Ea(xr, xr_old)
                 et = Et(self.x_true, xr)
-            except ValueError:
+            except (ZeroDivisionError, ValueError):
                 err = f"**Error**: Angka tidak valid pada perhitungan error pada iterasi {iterasi}"
                 break
 
@@ -71,10 +78,14 @@ class BiSection:
             error = []
             error.append(
                 f"E_t &= \\left| \\frac{{{self.x_true} - ({xr})}}{{{self.x_true}}} \\right| \\times 100\\% = {et}\\%"
+                if self.x_true != 0
+                else f"E_t &= \\left| {self.x_true} - ({xr}) \\right| \\times 100\\% = {et}\\%"
             )
             if iterasi > 1:
                 error.append(
                     f"E_a &= \\left| \\frac{{{xr} - ({custom_round(xr_old)})}}{{{xr}}} \\right| \\times 100\\% = {ea}\\%"
+                    if xr != 0
+                    else f"E_a &= \\left| {xr} - ({custom_round(xr_old)}) \\right| \\times 100\\% = {ea}\\%"
                 )
 
             step += "$$\n\\begin{aligned}\n"
@@ -96,12 +107,9 @@ class BiSection:
 
             steps.append(step)
 
-            if iterasi != 1:
-                if 0 <= et < self.tol:
-                    steps.append(
-                        f"**Konvergen** pada iterasi ke-{iterasi} (Et < Toleransi)."
-                    )
-                    break
+            if et < self.tol or ea < self.tol:
+                steps.append(f"### **Konvergen** pada iterasi ke-{iterasi}")
+                break
 
             if iterasi >= self.max_iter:
                 err = f"**Tidak konvergen** setelah {self.max_iter} iterasi."
@@ -141,10 +149,13 @@ class FalsePosition:
         while True:
             fl = custom_round(self.evaluate(self.f, self.xl))
             fu = custom_round(self.evaluate(self.f, self.xu))
+            if fl * fu > 0:
+                err = f"**Error**: Pemilihan batas interval tidak valid (f(xl) dan f(xu) memiliki tanda yang sama)."
+                break
 
             try:
                 xr = custom_round(self.xu - (fu * (self.xl - self.xu)) / (fl - fu))
-            except ValueError:
+            except (ZeroDivisionError, ValueError):
                 err = f"**Error**: Pembagian dengan nol (f(xl) - f(xu) = 0) terjadi pada iterasi ke-{iterasi}."
                 break
 
@@ -154,7 +165,7 @@ class FalsePosition:
             try:
                 ea = Ea(xr, xr_old)
                 et = Et(self.x_true, xr)
-            except ValueError:
+            except (ZeroDivisionError, ValueError):
                 err = f"**Error**: Angka tidak valid pada perhitungan error pada iterasi {iterasi}"
                 break
 
@@ -183,10 +194,14 @@ class FalsePosition:
             error = []
             error.append(
                 f"E_t &= \\left| \\frac{{{self.x_true} - ({xr})}}{{{self.x_true}}} \\right| \\times 100\\% = {et}\\%"
+                if self.x_true != 0
+                else f"E_t &= \\left| {self.x_true} - ({xr}) \\right| \\times 100\\% = {et}\\%"
             )
             if iterasi > 1:
                 error.append(
                     f"E_a &= \\left| \\frac{{{xr} - ({custom_round(xr_old)})}}{{{xr}}} \\right| \\times 100\\% = {ea}\\%"
+                    if xr != 0
+                    else f"E_a &= \\left| {xr} - ({custom_round(xr_old)}) \\right| \\times 100\\% = {ea}\\%"
                 )
 
             step += "$$\n\\begin{aligned}\n"
@@ -208,12 +223,9 @@ class FalsePosition:
 
             steps.append(step)
 
-            if iterasi != 1:
-                if 0 <= et < self.tol:
-                    steps.append(
-                        f"**Konvergen** pada iterasi ke-{iterasi} (Et < Toleransi)."
-                    )
-                    break
+            if et < self.tol or ea < self.tol:
+                steps.append(f"### **Konvergen** pada iterasi ke-{iterasi}")
+                break
 
             if iterasi >= self.max_iter:
                 err = f"**Tidak konvergen** setelah {self.max_iter} iterasi."
@@ -254,14 +266,15 @@ class FixedPoint:
 
             iterasi += 1
 
-            if x_new > float(1e6) or x_new < float(-1e6):
-                err = f"**Error**: x_{iterasi} melebihi batas maksimum (1 Juta)."
+            # check agar tidak overflow
+            if x_new > self.x_true + float(1e6) or x_new < self.x_true - float(1e6):
+                err = f"**Error**: x_{iterasi} melebihi batas maksimum."
                 break
 
             try:
                 ea = Ea(x_new, x_old)
                 et = Et(self.x_true, x_new)
-            except ValueError:
+            except (ValueError, ZeroDivisionError):
                 err = f"**Error**: Angka tidak valid pada perhitungan error pada iterasi {iterasi}"
                 break
 
@@ -279,22 +292,24 @@ class FixedPoint:
 
             val_str = f"({x_old})" if x_old < 0 else str(x_old)
 
-            substituted_expr = self.f.subs(self.x, sp.Symbol(val_str))
-            expr_latex = sp.latex(substituted_expr)
+            substituted_eq = self.f.subs(self.x, sp.Symbol(val_str))
+            latex_eq = sp.latex(substituted_eq)
 
             step += "$$\n\\begin{aligned}\n"
-            step += f"x_{{{iterasi}}} &= {expr_latex} = {x_new}\n"
+            step += f"x_{{{iterasi}}} &= {latex_eq} = {x_new}\n"
             step += "\\end{aligned}\n$$\n\n"
 
             error = []
             error.append(
                 f"E_t &= \\left| \\frac{{{self.x_true} - ({x_new})}}{{{self.x_true}}} \\right| \\times 100\\% = {et}\\%"
+                if self.x_true != 0
+                else f"E_t &= \\left| {self.x_true} - ({x_new}) \\right| \\times 100\\% = {et}\\%"
             )
-
-            if iterasi > 1:
-                error.append(
-                    f"E_a &= \\left| \\frac{{{x_new} - ({x_old})}}{{{x_new}}} \\right| \\times 100\\% = {ea}\\%"
-                )
+            error.append(
+                f"E_a &= \\left| \\frac{{{x_new} - ({custom_round(x_old)})}}{{{x_new}}} \\right| \\times 100\\% = {ea}\\%"
+                if x_new != 0
+                else f"E_a &= \\left| {x_new} - ({custom_round(x_old)}) \\right| \\times 100\\% = {ea}\\%"
+            )
 
             step += "$$\n\\begin{aligned}\n"
             step += " \\\\[0.5em]\n".join(error)
@@ -304,12 +319,9 @@ class FixedPoint:
 
             steps.append(step)
 
-            if iterasi != 1:
-                if 0 <= et < self.tol:
-                    steps.append(
-                        f"**Konvergen** pada iterasi ke-{iterasi} (Et < Toleransi)."
-                    )
-                    break
+            if et < self.tol or ea < self.tol:
+                steps.append(f"### **Konvergen** pada iterasi ke-{iterasi}")
+                break
 
             if iterasi >= self.max_iter:
                 err = f"**Tidak konvergen** setelah {self.max_iter} iterasi."
@@ -334,32 +346,32 @@ class NewtonRaphson:
         return float(expr.subs(self.x, val))
 
     def solve(self):
-        i = 0
+        iterasi = 0
         x_old = self.x0
 
         rows = []
         steps = []
         err = None
         while True:
-            i += 1
+            iterasi += 1
             fx = custom_round(self.evaluate(self.f, x_old))
             dfx = custom_round(self.evaluate(self.df, x_old))
             try:
                 x_new = custom_round(x_old - (fx / dfx))
-            except ZeroDivisionError:
-                err = f"**Error**: Pembagian dengan nol f'(x_{i}) = 0 terjadi pada iterasi ke-{i}."
+            except (ZeroDivisionError, ValueError):
+                err = f"**Error**: Pembagian dengan nol f'(x_{iterasi}) = 0 terjadi pada iterasi ke-{iterasi}."
                 break
 
             try:
                 ea = Ea(x_new, x_old)
                 et = Et(self.x_true, x_new)
             except ValueError:
-                err = f"**Error**: Angka tidak valid pada perhitungan error pada iterasi {i}"
+                err = f"**Error**: Angka tidak valid pada perhitungan error pada iterasi {iterasi}"
                 break
 
             rows.append(
                 {
-                    "Iterasi": i,
+                    "Iterasi": iterasi,
                     "x_i": custom_round(x_old),
                     "f(x_i)": fx,
                     "f'(x_i)": dfx,
@@ -369,19 +381,23 @@ class NewtonRaphson:
                 }
             )
 
-            step = f"**Iterasi {i}:**\n\n"
+            step = f"**Iterasi {iterasi}:**\n\n"
             step += "$$\n\\begin{aligned}\n"
-            step += f"f(x_{{{i - 1}}}) &= {fx} \\\\\n"
-            step += f"f'(x_{{{i - 1}}}) &= {dfx} \\\\[1em]\n"
-            step += f"x_{{{i}}} &= x_{{{i - 1}}} - \\frac{{f(x_{{{i - 1}}})}}{{f'(x_{{{i - 1}}})}} = {x_new} \n"
+            step += f"f(x_{{{iterasi - 1}}}) &= {fx} \\\\\n"
+            step += f"f'(x_{{{iterasi - 1}}}) &= {dfx} \\\\[1em]\n"
+            step += f"x_{{{iterasi}}} &= x_{{{iterasi - 1}}} - \\frac{{f(x_{{{iterasi - 1}}})}}{{f'(x_{{{iterasi - 1}}})}} = {x_new} \n"
             step += "\\end{aligned}\n$$\n\n"
 
             error = []
             error.append(
                 f"E_t &= \\left| \\frac{{{self.x_true} - ({x_new})}}{{{self.x_true}}} \\right| \\times 100\\% = {et}\\%"
+                if self.x_true != 0
+                else f"E_t &= \\left| {self.x_true} - ({x_new}) \\right| \\times 100\\% = {et}\\%"
             )
             error.append(
-                f"E_a &= \\left| \\frac{{{x_new} - ({x_old})}}{{{x_new}}} \\right| \\times 100\\% = {ea}\\%"
+                f"E_a &= \\left| \\frac{{{x_new} - ({custom_round(x_old)})}}{{{x_new}}} \\right| \\times 100\\% = {ea}\\%"
+                if x_new != 0
+                else f"E_a &= \\left| {x_new} - ({custom_round(x_old)}) \\right| \\times 100\\% = {ea}\\%"
             )
 
             step += "$$\n\\begin{aligned}\n"
@@ -392,12 +408,11 @@ class NewtonRaphson:
 
             x_old = x_new
 
-            if i != 1:
-                if 0 <= et < self.tol:
-                    steps.append(f"**Konvergen** pada iterasi ke-{i} (Et < Toleransi).")
-                    break
+            if et < self.tol or ea < self.tol:
+                steps.append(f"### **Konvergen** pada iterasi ke-{iterasi}")
+                break
 
-            if i >= self.max_iter:
+            if iterasi >= self.max_iter:
                 err = f"**Tidak konvergen** setelah {self.max_iter} iterasi."
                 break
 
@@ -426,7 +441,7 @@ class Secant:
         return float(expr.subs(self.x, val))
 
     def solve(self):
-        i = 0
+        iterasi = 0
         x_old_0 = self.x0
         x_old_1 = self.x1
 
@@ -434,7 +449,7 @@ class Secant:
         steps = []
         err = None
         while True:
-            i += 1
+            iterasi += 1
             fx0_raw = self.evaluate(self.f, x_old_0)
             fx1_raw = self.evaluate(self.f, x_old_1)
             fx0 = custom_round(fx0_raw)
@@ -443,20 +458,20 @@ class Secant:
                 x_new = custom_round(
                     x_old_1 - (fx1_raw * (x_old_0 - x_old_1)) / (fx0_raw - fx1_raw)
                 )
-            except ZeroDivisionError:
-                err = f"**Error**: Pembagian dengan nol terjadi f(x_{i - 2}) sama dengan f(x_{i - 1}) pada iterasi ke-{i}."
+            except (ZeroDivisionError, ValueError):
+                err = f"**Error**: Pembagian dengan nol terjadi f(x_{iterasi - 2}) sama dengan f(x_{iterasi - 1}) pada iterasi ke-{iterasi}."
                 break
 
             try:
                 ea = Ea(x_new, x_old_1)
                 et = Et(self.x_true, x_new)
             except ValueError:
-                err = f"**Error**: Angka tidak valid pada perhitungan error pada iterasi {i}"
+                err = f"**Error**: Angka tidak valid pada perhitungan error pada iterasi {iterasi}"
                 break
 
             rows.append(
                 {
-                    "Iterasi": i,
+                    "Iterasi": iterasi,
                     "x_(i-1)": custom_round(x_old_0),
                     "x_i": custom_round(x_old_1),
                     "f(x_(i-1))": fx0,
@@ -467,19 +482,23 @@ class Secant:
                 }
             )
 
-            step = f"**Iterasi {i}:**\n\n"
+            step = f"**Iterasi {iterasi}:**\n\n"
             step += "$$\n\\begin{aligned}\n"
-            step += f"f(x_{{{i - 2}}}) &= {fx0} \\\\\n"
-            step += f"f(x_{{{i - 1}}}) &= {fx1} \\\\[1em]\n"
-            step += f"x_{{{i}}} &= x_{{{i - 1}}} - \\frac{{f(x_{{{i - 1}}}) \\cdot (x_{{{i - 2}}} - x_{{{i - 1}}})}}{{f(x_{{{i - 2}}}) - f(x_{{{i - 1}}})}} = {x_new} \n"
+            step += f"f(x_{{{iterasi - 2}}}) &= {fx0} \\\\\n"
+            step += f"f(x_{{{iterasi - 1}}}) &= {fx1} \\\\[1em]\n"
+            step += f"x_{{{iterasi}}} &= x_{{{iterasi - 1}}} - \\frac{{f(x_{{{iterasi - 1}}}) \\cdot (x_{{{iterasi - 2}}} - x_{{{iterasi - 1}}})}}{{f(x_{{{iterasi - 2}}}) - f(x_{{{iterasi - 1}}})}} = {x_new} \n"
             step += "\\end{aligned}\n$$\n\n"
 
             error = []
             error.append(
                 f"E_t &= \\left| \\frac{{{self.x_true} - ({x_new})}}{{{self.x_true}}} \\right| \\times 100\\% = {et}\\%"
+                if self.x_true != 0
+                else f"E_t &= \\left| {self.x_true} - ({x_new}) \\right| \\times 100\\% = {et}\\%"
             )
             error.append(
-                f"E_a &= \\left| \\frac{{{x_new} - ({x_old_1})}}{{{x_new}}} \\right| \\times 100\\% = {ea}\\%"
+                f"E_a &= \\left| \\frac{{{x_new} - ({custom_round(x_old_1)})}}{{{x_new}}} \\right| \\times 100\\% = {ea}\\%"
+                if x_new != 0
+                else f"E_a &= \\left| {x_new} - ({custom_round(x_old_1)}) \\right| \\times 100\\% = {ea}\\%"
             )
 
             step += "$$\n\\begin{aligned}\n"
@@ -491,13 +510,200 @@ class Secant:
             x_old_0 = x_old_1
             x_old_1 = x_new
 
-            if i != 1:
-                if 0 <= et < self.tol:
-                    steps.append(f"**Konvergen** pada iterasi ke-{i} (Et < Toleransi).")
-                    break
+            if et < self.tol or ea < self.tol:
+                steps.append(f"### **Konvergen** pada iterasi ke-{iterasi}")
+                break
 
-            if i >= self.max_iter:
+            if iterasi >= self.max_iter:
                 err = f"**Tidak konvergen** setelah {self.max_iter} iterasi."
                 break
 
         return pd.DataFrame(rows), steps, custom_round(x_old_1), err
+
+
+class MNewtonRaphson:
+    def __init__(
+        self, f: str, x0: float, x_true: float, max_iter: float = 10, tol: float = 0.1
+    ) -> None:
+        self.x = sp.symbols("x")
+        self.f = sp.sympify(f)
+        self.df = sp.diff(self.f, self.x)
+        self.ddf = sp.diff(self.df, self.x)
+        self.x0 = x0
+        self.x_true = x_true
+        self.max_iter = max_iter
+        self.tol = tol
+
+    def evaluate(self, expr, val: float) -> float:
+        return float(expr.subs(self.x, val))
+
+    def solve(self):
+        iterasi = 0
+        x_old = self.x0
+
+        rows = []
+        steps = []
+        err = None
+        while True:
+            iterasi += 1
+            fx = custom_round(self.evaluate(self.f, x_old))
+            dfx = custom_round(self.evaluate(self.df, x_old))
+            ddfx = custom_round(self.evaluate(self.ddf, x_old))
+            try:
+                x_new = custom_round(x_old - (fx * dfx) / ((dfx**2) - (fx * ddfx)))
+            except (ZeroDivisionError, ValueError):
+                err = f"**Error**: Pembagian dengan nol terjadi pada iterasi ke-{iterasi}."
+                break
+
+            try:
+                ea = Ea(x_new, x_old)
+                et = Et(self.x_true, x_new)
+            except ValueError:
+                err = f"**Error**: Angka tidak valid pada perhitungan error pada iterasi {iterasi}"
+                break
+
+            rows.append(
+                {
+                    "Iterasi": iterasi,
+                    "x_i": custom_round(x_old),
+                    "f(x_i)": fx,
+                    "f'(x_i)": dfx,
+                    "x_(i+1)": x_new,
+                    "Et (%)": custom_round(et),
+                    "Ea (%)": custom_round(ea),
+                }
+            )
+
+            step = f"**Iterasi {iterasi}:**\n\n"
+            step += "$$\n\\begin{aligned}\n"
+            step += f"f(x_{{{iterasi - 1}}}) &= {fx} \\\\\n"
+            step += f"f'(x_{{{iterasi - 1}}}) &= {dfx} \\\\\n"
+            step += f"f''(x_{{{iterasi - 1}}}) &= {ddfx} \\\\[1em]\n"
+            step += f"x_{{{iterasi}}} &= x_{{{iterasi - 1}}} - \\frac{{f(x_{{{iterasi - 1}}}) \\cdot f'(x_{{{iterasi - 1}}})}}{{[f'(x_{{{iterasi - 1}}})]^2 - (f(x_{{{iterasi - 1}}}) \\cdot f''(x_{{{iterasi - 1}}}))}} = {x_new} \n"
+            step += "\\end{aligned}\n$$\n\n"
+
+            error = []
+            error.append(
+                f"E_t &= \\left| \\frac{{{self.x_true} - ({x_new})}}{{{self.x_true}}} \\right| \\times 100\\% = {et}\\%"
+                if self.x_true != 0
+                else f"E_t &= \\left| {self.x_true} - ({x_new}) \\right| \\times 100\\% = {et}\\%"
+            )
+            error.append(
+                f"E_a &= \\left| \\frac{{{x_new} - ({custom_round(x_old)})}}{{{x_new}}} \\right| \\times 100\\% = {ea}\\%"
+                if x_new != 0
+                else f"E_a &= \\left| {x_new} - ({custom_round(x_old)}) \\right| \\times 100\\% = {ea}\\%"
+            )
+
+            step += "$$\n\\begin{aligned}\n"
+            step += " \\\\[0.5em]\n".join(error)
+            step += "\n\\end{aligned}\n$$\n\n"
+
+            steps.append(step)
+
+            x_old = x_new
+
+            if et < self.tol or ea < self.tol:
+                steps.append(f"### **Konvergen** pada iterasi ke-{iterasi}")
+                break
+
+            if iterasi >= self.max_iter:
+                err = f"**Tidak konvergen** setelah {self.max_iter} iterasi."
+                break
+
+        return pd.DataFrame(rows), steps, custom_round(x_old), err
+
+
+class PolynomFactorization:
+    def __init__(self, f: str, max_iter: int = 10) -> None:
+        self.x = sp.symbols("x")
+        self.f = sp.sympify(f)
+        self.max_iter = max_iter
+
+    @staticmethod
+    def ABC(a: float = 1, b: float = 1, c: float = 1) -> tuple[float, float]:
+        dis = b**2 - 4 * a * c
+        if dis < 0:
+            return np.nan, np.nan
+
+        sq = np.sqrt(dis)
+        x1 = ((-b) + sq) / (2 * a)
+        x2 = ((-b) - sq) / (2 * a)
+        return custom_round(x1), custom_round(x2)
+
+    def _solve_deg3(self, coeff: list[int]):
+        A0, A1, A2 = coeff[0], coeff[1], coeff[2]
+
+        rows = []
+        b0 = 0
+        a1 = A2
+        a0 = A1
+
+        for i in range(self.max_iter):
+            b0 = custom_round(A0 / a0)
+            b0 = custom_round(A0 / a0)
+            a0 = custom_round(A1 - a1 * b0)
+            rows.append({"Iterasi": i + 1, "b0": b0, "a1": a1, "a0": a0})
+
+        x1 = -1 * b0
+        x2, x3 = self.ABC(a=1, b=a1, c=a0)
+
+        return rows, (x1, x2, x3)
+
+    def _solve_deg4(self, coeff: list[int]):
+        A0, A1, A2, A3 = coeff[0], coeff[1], coeff[2], coeff[3]
+
+        rows = []
+        b1 = 0
+        b0 = 0
+        a1 = A3
+        a0 = A2
+        for i in range(self.max_iter):
+            b0 = custom_round(A0 / a0)
+            b1 = custom_round((A1 - a1 * b0) / a0)
+            a1 = custom_round(A3 - b1)
+            a0 = custom_round(A2 - b0 - a1 * b1)
+            rows.append({"Iterasi": i + 1, "b0": b0, "b1": b1, "a1": a1, "a0": a0})
+
+        x1, x2 = self.ABC(b=b1, c=b0)
+        x3, x4 = self.ABC(b=a1, c=a0)
+        return rows, (x1, x2, x3, x4)
+
+    def _solve_deg5(self, coeff: list[int]):
+        A0, A1, A2, A3, A4 = coeff[0], coeff[1], coeff[2], coeff[3], coeff[4]
+
+        rows = []
+        a0 = 0
+        b1 = 0
+        b0 = 0
+        c1 = A4
+        c0 = A3
+        for i in range(self.max_iter):
+            b0 = custom_round((A1 - a0 * A2 + a0**2 * A3 - a0**3 * A4 + a0**4) / c0)
+            b1 = custom_round((A2 - a0 * A3 + a0**2 * A4 - a0**3 + c1 * b0) / c0)
+            a0 = custom_round(A0 / (b0 * c0))
+            c1 = custom_round(A4 - a0 - b1)
+            c0 = custom_round(A3 - a0 * A4 + a0**2 - b0 - c1 * b1)
+            rows.append(
+                {"Iterasi": i + 1, "b0": b0, "b1": b1, "a0": a0, "c1": c1, "c0": c0}
+            )
+
+        x1 = -1 * a0
+        x2, x3 = self.ABC(b=b1, c=b0)
+        x4, x5 = self.ABC(b=c1, c=c0)
+        return rows, (x1, x2, x3, x4, x5)
+
+    def solve(self):
+        degree = self.f.as_poly().degree()
+        coeff = [int(self.f.coeff(self.x, i)) for i in range(degree + 1)]
+        err = None
+        match degree:
+            case 3:
+                rows, roots = self._solve_deg3(coeff)
+            case 4:
+                rows, roots = self._solve_deg4(coeff)
+            case 5:
+                rows, roots = self._solve_deg5(coeff)
+            case _:
+                err = f"Derajat Polinomial {degree} tidak didukung pada program ini"
+
+        return rows, roots, err
