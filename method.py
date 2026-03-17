@@ -729,7 +729,7 @@ class PolynomFactorization:
         degree = poly.degree()
 
         coeff = [poly.coeff_monomial(self.x**i) for i in range(degree, -1, -1)]
-        coeff = [float(c) for c in coeff]
+        coeff = [int(c) for c in coeff]
 
         if degree == 2:
             A2, A1, A0 = coeff
@@ -750,11 +750,6 @@ $$
 
         elif degree == 3:
             A3, A2, A1, A0 = coeff
-            # Convert to int like original
-            A3 = int(A3)
-            A2 = int(A2)
-            A1 = int(A1)
-            A0 = int(A0)
 
             rows = []
             steps = []
@@ -776,7 +771,9 @@ $$
 """)
 
             for i in range(1, self.max_iter):
-                b0 = custom_round(A0 / a0)
+                a0_old = a0
+
+                b0 = custom_round(A0 / a0_old)
                 a1 = custom_round(A2 - b0)
                 a0 = custom_round(A1 - a1 * b0)
 
@@ -786,7 +783,7 @@ $$
 
 $$
 \\begin{{aligned}}
-b_0 &= \\frac{{{A0}}}{{{a0}}} = {b0} \\\\
+b_0 &= \\frac{{{A0}}}{{{a0_old}}} = {b0} \\\\
 a_1 &= {A2} - ({b0}) = {a1} \\\\
 a_0 &= {A1} - ({a1} \\cdot {b0}) = {a0}
 \\end{{aligned}}
@@ -800,11 +797,6 @@ $$
 
         elif degree == 4:
             A4, A3, A2, A1, A0 = coeff
-            A4 = int(A4)
-            A3 = int(A3)
-            A2 = int(A2)
-            A1 = int(A1)
-            A0 = int(A0)
 
             rows = []
             steps = []
@@ -827,8 +819,10 @@ $$
 """)
 
             for i in range(1, self.max_iter):
-                b0 = custom_round(A0 / a0)
-                b1 = custom_round((A1 - a1 * b0) / a0)
+                a0_old = a0
+
+                b0 = custom_round(A0 / a0_old)
+                b1 = custom_round((A1 - a1 * b0) / a0_old)
                 a1 = custom_round(A3 - b1)
                 a0 = custom_round(A2 - b0 - a1 * b1)
 
@@ -838,8 +832,8 @@ $$
 
 $$
 \\begin{{aligned}}
-b_0 &= \\frac{{{A0}}}{{{a0}}} = {b0} \\\\
-b_1 &= \\frac{{{A1} - ({a1} \\cdot {b0})}}{{{a0}}} = {b1} \\\\
+b_0 &= \\frac{{{A0}}}{{{a0_old}}} = {b0} \\\\
+b_1 &= \\frac{{{A1} - ({a1} \\cdot {b0})}}{{{a0_old}}} = {b1} \\\\
 a_1 &= {A3} - {b1} = {a1} \\\\
 a_0 &= {A2} - {b0} - ({a1} \\cdot {b1}) = {a0}
 \\end{{aligned}}
@@ -853,12 +847,6 @@ $$
 
         elif degree == 5:
             A5, A4, A3, A2, A1, A0 = coeff
-            A5 = int(A5)
-            A4 = int(A4)
-            A3 = int(A3)
-            A2 = int(A2)
-            A1 = int(A1)
-            A0 = int(A0)
 
             rows = []
             steps = []
@@ -882,9 +870,11 @@ $$
 """)
 
             for i in range(1, self.max_iter):
-                b0 = custom_round((A1 - a0 * A2 + a0**2 * A3 - a0**3 * A4 + a0**4) / c0)
-                b1 = custom_round((A2 - a0 * A3 + a0**2 * A4 - a0**3 + c1 * b0) / c0)
-                a0 = custom_round(A0 / (b0 * c0))
+                c0_old = c0
+
+                b0 = custom_round((A1 - a0 * A2 + a0**2 * A3 - a0**3 * A4 + a0**4) / c0_old)
+                b1 = custom_round((A2 - a0 * A3 + a0**2 * A4 - a0**3 + c1 * b0) / c0_old)
+                a0 = custom_round(A0 / (b0 * c0_old))
                 c1 = custom_round(A4 - a0 - b1)
                 c0 = custom_round(A3 - a0 * A4 + a0**2 - b0 - c1 * b1)
 
