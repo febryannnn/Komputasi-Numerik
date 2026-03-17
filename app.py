@@ -1,4 +1,5 @@
 import streamlit as st
+import numpy as np
 from method import (
     BiSection,
     FalsePosition,
@@ -105,6 +106,8 @@ elif metode == "Polynomial Factorization":
     pass
 
 if st.button("Hitung"):
+    steps = None
+    akar = None
     if metode == "Bi Section":
         solver = BiSection(fungsi, xl, xu, x_true, max_iter, tol)
         df, steps, akar, err = solver.solve()
@@ -131,7 +134,8 @@ if st.button("Hitung"):
 
     elif metode == "Polynomial Factorization":
         solver = PolynomFactorization(fungsi, max_iter)
-        df, roots, err = solver.solve()
+        df, steps, roots, err = solver.solve()
+        akar = roots
 
     st.subheader("Hasil Iterasi 📋")
     st.dataframe(df, width="stretch", hide_index=True)
@@ -140,7 +144,7 @@ if st.button("Hitung"):
         st.warning(err)
 
     # TODO: untuk polynomial factorization, log terakhir harus dibenerin
-    if steps is not None and metode != "Polynomial Factorization:
+    if steps is not None:
         st.divider()
         st.subheader("Langkah-Langkah Perhitungan 🕵️‍♂️")
         for i in range(len(steps)):
@@ -150,7 +154,7 @@ if st.button("Hitung"):
 
     if metode == "Polynomial Factorization":
         st.success(
-            f"Akar-akar polinomial: {', '.join(str(f"x_{i+1} = {root}") for i, root in enumerate(roots) if not root.isna())}"
+            f"Akar-akar polinomial: {', '.join(str(f"x_{i+1} = {root}") for i, root in enumerate(roots) if not np.isnan(root))}"
         )
 
     st.divider()

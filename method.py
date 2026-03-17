@@ -613,14 +613,108 @@ class MNewtonRaphson:
         return pd.DataFrame(rows), steps, custom_round(x_old), err
 
 
+# class PolynomFactorization:
+#     def __init__(self, f: str, max_iter: int = 10) -> None:
+#         self.x = sp.symbols("x")
+#         self.f = sp.sympify(f)
+#         self.max_iter = max_iter
+
+#     @staticmethod
+#     def ABC(a: float = 1, b: float = 1, c: float = 1) -> tuple[float, float]:
+#         dis = b**2 - 4 * a * c
+#         if dis < 0:
+#             return np.nan, np.nan
+
+#         sq = np.sqrt(dis)
+#         x1 = ((-b) + sq) / (2 * a)
+#         x2 = ((-b) - sq) / (2 * a)
+#         return custom_round(x1), custom_round(x2)
+
+#     def _solve_deg3(self, coeff: list[int]):
+#         A2, A1, A0 = coeff
+
+#         rows = []
+#         b0 = 0
+#         a1 = A2
+#         a0 = A1
+
+#         for i in range(self.max_iter):
+#             b0 = custom_round(A0 / a0)
+#             a1 = custom_round(A2 - b0)
+#             a0 = custom_round(A1 - a1 * b0)
+#             rows.append({"Iterasi": i + 1, "b0": b0, "a1": a1, "a0": a0})
+
+#         x1 = -1 * b0
+#         x2, x3 = self.ABC(a=1, b=a1, c=a0)
+
+#         return rows, (x1, x2, x3)
+
+#     def _solve_deg4(self, coeff: list[int]):
+#         A3, A2, A1, A0 = coeff
+
+#         rows = []
+#         b1 = 0
+#         b0 = 0
+#         a1 = A3
+#         a0 = A2
+#         for i in range(self.max_iter):
+#             b0 = custom_round(A0 / a0)
+#             b1 = custom_round((A1 - a1 * b0) / a0)
+#             a1 = custom_round(A3 - b1)
+#             a0 = custom_round(A2 - b0 - a1 * b1)
+#             rows.append({"Iterasi": i + 1, "b0": b0, "b1": b1, "a1": a1, "a0": a0})
+
+#         x1, x2 = self.ABC(b=b1, c=b0)
+#         x3, x4 = self.ABC(b=a1, c=a0)
+#         return rows, (x1, x2, x3, x4)
+
+#     def _solve_deg5(self, coeff: list[int]):
+#         A4, A3, A2, A1, A0 = coeff
+
+#         rows = []
+#         a0 = 0
+#         b1 = 0
+#         b0 = 0
+#         c1 = A4
+#         c0 = A3
+#         for i in range(self.max_iter):
+#             b0 = custom_round((A1 - a0 * A2 + a0**2 * A3 - a0**3 * A4 + a0**4) / c0)
+#             b1 = custom_round((A2 - a0 * A3 + a0**2 * A4 - a0**3 + c1 * b0) / c0)
+#             a0 = custom_round(A0 / (b0 * c0))
+#             c1 = custom_round(A4 - a0 - b1)
+#             c0 = custom_round(A3 - a0 * A4 + a0**2 - b0 - c1 * b1)
+#             rows.append(
+#                 {"Iterasi": i + 1, "b0": b0, "b1": b1, "a0": a0, "c1": c1, "c0": c0}
+#             )
+
+#         x1 = -1 * a0
+#         x2, x3 = self.ABC(b=b1, c=b0)
+#         x4, x5 = self.ABC(b=c1, c=c0)
+#         return rows, (x1, x2, x3, x4, x5)
+
+#     def solve(self):
+#         degree = self.f.as_poly().degree()
+#         coeff = [int(self.f.coeff(self.x, i)) for i in range(degree, -1, -1)]
+#         err = None
+#         match degree:
+#             case 3:
+#                 rows, roots = self._solve_deg3(coeff)
+#             case 4:
+#                 rows, roots = self._solve_deg4(coeff)
+#             case 5:
+#                 rows, roots = self._solve_deg5(coeff)
+#             case _:
+#                 err = f"Derajat Polinomial {degree} tidak didukung pada program ini"
+
+#         return rows, roots, err
+
 class PolynomFactorization:
     def __init__(self, f: str, max_iter: int = 10) -> None:
         self.x = sp.symbols("x")
         self.f = sp.sympify(f)
         self.max_iter = max_iter
 
-    @staticmethod
-    def ABC(a: float = 1, b: float = 1, c: float = 1) -> tuple[float, float]:
+    def ABC(self, a=1, b=1, c=1):
         dis = b**2 - 4 * a * c
         if dis < 0:
             return np.nan, np.nan
@@ -630,80 +724,190 @@ class PolynomFactorization:
         x2 = ((-b) - sq) / (2 * a)
         return custom_round(x1), custom_round(x2)
 
-    def _solve_deg3(self, coeff: list[int]):
-        A0, A1, A2 = coeff[0], coeff[1], coeff[2]
-
-        rows = []
-        b0 = 0
-        a1 = A2
-        a0 = A1
-
-        for i in range(self.max_iter):
-            b0 = custom_round(A0 / a0)
-            b0 = custom_round(A0 / a0)
-            a0 = custom_round(A1 - a1 * b0)
-            rows.append({"Iterasi": i + 1, "b0": b0, "a1": a1, "a0": a0})
-
-        x1 = -1 * b0
-        x2, x3 = self.ABC(a=1, b=a1, c=a0)
-
-        return rows, (x1, x2, x3)
-
-    def _solve_deg4(self, coeff: list[int]):
-        A0, A1, A2, A3 = coeff[0], coeff[1], coeff[2], coeff[3]
-
-        rows = []
-        b1 = 0
-        b0 = 0
-        a1 = A3
-        a0 = A2
-        for i in range(self.max_iter):
-            b0 = custom_round(A0 / a0)
-            b1 = custom_round((A1 - a1 * b0) / a0)
-            a1 = custom_round(A3 - b1)
-            a0 = custom_round(A2 - b0 - a1 * b1)
-            rows.append({"Iterasi": i + 1, "b0": b0, "b1": b1, "a1": a1, "a0": a0})
-
-        x1, x2 = self.ABC(b=b1, c=b0)
-        x3, x4 = self.ABC(b=a1, c=a0)
-        return rows, (x1, x2, x3, x4)
-
-    def _solve_deg5(self, coeff: list[int]):
-        A0, A1, A2, A3, A4 = coeff[0], coeff[1], coeff[2], coeff[3], coeff[4]
-
-        rows = []
-        a0 = 0
-        b1 = 0
-        b0 = 0
-        c1 = A4
-        c0 = A3
-        for i in range(self.max_iter):
-            b0 = custom_round((A1 - a0 * A2 + a0**2 * A3 - a0**3 * A4 + a0**4) / c0)
-            b1 = custom_round((A2 - a0 * A3 + a0**2 * A4 - a0**3 + c1 * b0) / c0)
-            a0 = custom_round(A0 / (b0 * c0))
-            c1 = custom_round(A4 - a0 - b1)
-            c0 = custom_round(A3 - a0 * A4 + a0**2 - b0 - c1 * b1)
-            rows.append(
-                {"Iterasi": i + 1, "b0": b0, "b1": b1, "a0": a0, "c1": c1, "c0": c0}
-            )
-
-        x1 = -1 * a0
-        x2, x3 = self.ABC(b=b1, c=b0)
-        x4, x5 = self.ABC(b=c1, c=c0)
-        return rows, (x1, x2, x3, x4, x5)
-
     def solve(self):
-        degree = self.f.as_poly().degree()
-        coeff = [int(self.f.coeff(self.x, i)) for i in range(degree + 1)]
-        err = None
-        match degree:
-            case 3:
-                rows, roots = self._solve_deg3(coeff)
-            case 4:
-                rows, roots = self._solve_deg4(coeff)
-            case 5:
-                rows, roots = self._solve_deg5(coeff)
-            case _:
-                err = f"Derajat Polinomial {degree} tidak didukung pada program ini"
+        poly = self.f.as_poly()
+        degree = poly.degree()
 
-        return rows, roots, err
+        coeff = [poly.coeff_monomial(self.x**i) for i in range(degree, -1, -1)]
+        coeff = [float(c) for c in coeff]
+
+        if degree == 2:
+            A2, A1, A0 = coeff
+            x1, x2 = self.ABC(a=A2, b=A1, c=A0)
+
+            rows = [{"Iterasi": 0, "Info": "Rumus ABC langsung"}]
+            steps = [f"""
+**Langkah:**
+
+$$
+\\begin{{aligned}}
+x &= \\frac{{-b \\pm \\sqrt{{b^2 - 4ac}}}}{{2a}} \\\\
+a &= {A2}, \\quad b = {A1}, \\quad c = {A0}
+\\end{{aligned}}
+$$
+"""]
+            return rows, steps, (x1, x2), None
+
+        elif degree == 3:
+            A3, A2, A1, A0 = coeff
+            # Convert to int like original
+            A3 = int(A3)
+            A2 = int(A2)
+            A1 = int(A1)
+            A0 = int(A0)
+
+            rows = []
+            steps = []
+
+            b0 = 0
+            a1 = A2
+            a0 = A1
+
+            rows.append({"Iterasi": 0, "b0": b0, "a1": a1, "a0": a0})
+            steps.append(f"""
+**Iterasi 0:**
+
+$$
+\\begin{{aligned}}
+a_1 &= {A2} \\\\
+a_0 &= {A1}
+\\end{{aligned}}
+$$
+""")
+
+            for i in range(1, self.max_iter):
+                b0 = custom_round(A0 / a0)
+                a1 = custom_round(A2 - b0)
+                a0 = custom_round(A1 - a1 * b0)
+
+                rows.append({"Iterasi": i, "b0": b0, "a1": a1, "a0": a0})
+                steps.append(f"""
+**Iterasi {i}:**
+
+$$
+\\begin{{aligned}}
+b_0 &= \\frac{{{A0}}}{{{a0}}} = {b0} \\\\
+a_1 &= {A2} - ({b0}) = {a1} \\\\
+a_0 &= {A1} - ({a1} \\cdot {b0}) = {a0}
+\\end{{aligned}}
+$$
+""")
+
+            x1 = -1 * b0
+            x2, x3 = self.ABC(b=a1, c=a0)
+
+            return rows, steps, (x1, x2, x3), None
+
+        elif degree == 4:
+            A4, A3, A2, A1, A0 = coeff
+            A4 = int(A4)
+            A3 = int(A3)
+            A2 = int(A2)
+            A1 = int(A1)
+            A0 = int(A0)
+
+            rows = []
+            steps = []
+
+            b1 = 0
+            b0 = 0
+            a1 = A3
+            a0 = A2
+
+            rows.append({"Iterasi": 0, "b0": b0, "b1": b1, "a1": a1, "a0": a0})
+            steps.append(f"""
+**Iterasi 0:**
+
+$$
+\\begin{{aligned}}
+a_1 &= {A3} \\\\
+a_0 &= {A2}
+\\end{{aligned}}
+$$
+""")
+
+            for i in range(1, self.max_iter):
+                b0 = custom_round(A0 / a0)
+                b1 = custom_round((A1 - a1 * b0) / a0)
+                a1 = custom_round(A3 - b1)
+                a0 = custom_round(A2 - b0 - a1 * b1)
+
+                rows.append({"Iterasi": i, "b0": b0, "b1": b1, "a1": a1, "a0": a0})
+                steps.append(f"""
+**Iterasi {i}:**
+
+$$
+\\begin{{aligned}}
+b_0 &= \\frac{{{A0}}}{{{a0}}} = {b0} \\\\
+b_1 &= \\frac{{{A1} - ({a1} \\cdot {b0})}}{{{a0}}} = {b1} \\\\
+a_1 &= {A3} - {b1} = {a1} \\\\
+a_0 &= {A2} - {b0} - ({a1} \\cdot {b1}) = {a0}
+\\end{{aligned}}
+$$
+""")
+
+            x1, x2 = self.ABC(b=b1, c=b0)
+            x3, x4 = self.ABC(b=a1, c=a0)
+
+            return rows, steps, (x1, x2, x3, x4), None
+
+        elif degree == 5:
+            A5, A4, A3, A2, A1, A0 = coeff
+            A5 = int(A5)
+            A4 = int(A4)
+            A3 = int(A3)
+            A2 = int(A2)
+            A1 = int(A1)
+            A0 = int(A0)
+
+            rows = []
+            steps = []
+
+            a0 = 0
+            b1 = 0
+            b0 = 0
+            c1 = A4
+            c0 = A3
+
+            rows.append({"Iterasi": 0, "b0": b0, "b1": b1, "a0": a0, "c1": c1, "c0": c0})
+            steps.append(f"""
+**Iterasi 0:**
+
+$$
+\\begin{{aligned}}
+c_1 &= {A4} \\\\
+c_0 &= {A3}
+\\end{{aligned}}
+$$
+""")
+
+            for i in range(1, self.max_iter):
+                b0 = custom_round((A1 - a0 * A2 + a0**2 * A3 - a0**3 * A4 + a0**4) / c0)
+                b1 = custom_round((A2 - a0 * A3 + a0**2 * A4 - a0**3 + c1 * b0) / c0)
+                a0 = custom_round(A0 / (b0 * c0))
+                c1 = custom_round(A4 - a0 - b1)
+                c0 = custom_round(A3 - a0 * A4 + a0**2 - b0 - c1 * b1)
+
+                rows.append({"Iterasi": i, "b0": b0, "b1": b1, "a0": a0, "c1": c1, "c0": c0})
+                steps.append(f"""
+**Iterasi {i}:**
+
+$$
+\\begin{{aligned}}
+b_0 &= {b0} \\\\
+b_1 &= {b1} \\\\
+a_0 &= {a0} \\\\
+c_1 &= {c1} \\\\
+c_0 &= {c0}
+\\end{{aligned}}
+$$
+""")
+
+            x1 = -1 * a0
+            x2, x3 = self.ABC(b=b1, c=b0)
+            x4, x5 = self.ABC(b=c1, c=c0)
+
+            return rows, steps, (x1, x2, x3, x4, x5), None
+
+        else:
+            return None, None, None, f"Derajat {degree} tidak didukung"
