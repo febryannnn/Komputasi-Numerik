@@ -138,7 +138,8 @@ if st.button("Hitung"):
         akar = roots
 
     st.subheader("Hasil Iterasi 📋")
-    st.dataframe(df, width="stretch", hide_index=True)
+    if df is not None:
+        st.dataframe(df, width="stretch", hide_index=True)
 
     if err is not None:
         st.warning(err)
@@ -151,11 +152,6 @@ if st.button("Hitung"):
             st.markdown(steps[i])
             if i != len(steps) - 1:
                 st.space("medium")
-
-    if metode == "Polynomial Factorization":
-        st.success(
-            f"Akar-akar polinomial: {', '.join(str(f"x_{i+1} = {root}") for i, root in enumerate(roots) if not np.isnan(root))}"
-        )
 
     st.divider()
     if err is None:
