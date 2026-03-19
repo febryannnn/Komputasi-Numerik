@@ -11,7 +11,7 @@ from method import (
     PolynomFactorization,
 )
 
-# [yg buat claude code] Impor komponen UI (styling, chart Plotly, dsb.)
+# Impor komponen UI (styling, chart Plotly, dsb.)
 from ui import (
     inject_css,
     render_header,
@@ -27,7 +27,7 @@ from ui import (
     plot_iteration_comparison,
 )
 
-# [yg buat claude code] Page config & styling
+# Page config & styling
 st.set_page_config(
     page_title="Komputasi Numerik — ITS",
     page_icon="📐",
@@ -49,7 +49,7 @@ metode = st.selectbox(
     ],
 )
 
-# [yg buat claude code] Kartu info metode
+# Kartu info metode
 render_method_info(metode)
 
 st.subheader("Buat Fungsi")
@@ -172,7 +172,7 @@ if st.button("Hitung"):
     if err is not None:
         st.warning(err)
 
-    # [yg buat claude code] Visualisasi grafik Plotly
+    # Visualisasi grafik Plotly
     render_gradient_divider()
     render_section_header("📊", "Visualisasi")
 
@@ -203,7 +203,7 @@ if st.button("Hitung"):
             if i != len(steps) - 1:
                 st.divider()
 
-    # [yg buat claude code] Hasil akhir (styled box)
+    # Hasil akhir (styled box)
     render_gradient_divider()
 
     st.divider()
