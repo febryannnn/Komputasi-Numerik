@@ -165,16 +165,9 @@ if st.button("Hitung"):
         df, steps, roots, err = solver.solve()
         akar = roots
 
-    # [yg buat claude code] Error-only: tampilkan pesan lalu stop
-    if err is not None and df is None:
-        st.warning(err)
-        st.stop()
-
-    # [yg buat claude code] Tabel iterasi
-    render_section_header("📋", "Hasil Iterasi")
-    if isinstance(df, list):
-        df = pd.DataFrame(df)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.subheader("Hasil Iterasi 📋")
+    if df is not None:
+        st.dataframe(df, width="stretch", hide_index=True)
 
     if err is not None:
         st.warning(err)
@@ -212,12 +205,6 @@ if st.button("Hitung"):
 
     # [yg buat claude code] Hasil akhir (styled box)
     render_gradient_divider()
-
-    if metode == "Polynomial Factorization" and roots is not None:
-        render_success_result(
-            "Akar-akar polinomial",
-            ", ".join(f"x_{i+1} = {root}" for i, root in enumerate(roots) if not np.isnan(root)),
-        )
 
     st.divider()
     if err is None:
