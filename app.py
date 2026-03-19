@@ -1,5 +1,6 @@
 import streamlit as st
 import numpy as np
+import pandas as pd
 from method import (
     BiSection,
     FalsePosition,
@@ -10,8 +11,30 @@ from method import (
     PolynomFactorization,
 )
 
+# [yg buat claude code] Impor komponen UI (styling, chart Plotly, dsb.)
+from ui import (
+    inject_css,
+    render_header,
+    render_method_info,
+    render_section_header,
+    render_gradient_divider,
+    render_success_result,
+    render_metrics,
+    plot_convergence,
+    plot_error,
+    plot_function_with_root,
+    plot_polynomial_roots,
+    plot_iteration_comparison,
+)
 
-st.title("Komputasi Numerik Informatika ITS 📐")
+# [yg buat claude code] Page config & styling
+st.set_page_config(
+    page_title="Komputasi Numerik — ITS",
+    page_icon="📐",
+    layout="wide",
+)
+inject_css()
+render_header()
 
 metode = st.selectbox(
     "Pilih Metode",
@@ -25,6 +48,9 @@ metode = st.selectbox(
         "Polynomial Factorization",
     ],
 )
+
+# [yg buat claude code] Kartu info metode
+render_method_info(metode)
 
 st.subheader("Buat Fungsi")
 
@@ -108,6 +134,8 @@ elif metode == "Polynomial Factorization":
 if st.button("Hitung"):
     steps = None
     akar = None
+    roots = None
+
     if metode == "Bi Section":
         solver = BiSection(fungsi, xl, xu, x_true, max_iter, tol)
         df, steps, akar, err = solver.solve()
@@ -137,26 +165,60 @@ if st.button("Hitung"):
         df, steps, roots, err = solver.solve()
         akar = roots
 
-    st.subheader("Hasil Iterasi 📋")
-    st.dataframe(df, width="stretch", hide_index=True)
+    # [yg buat claude code] Error-only: tampilkan pesan lalu stop
+    if err is not None and df is None:
+        st.warning(err)
+        st.stop()
+
+    # [yg buat claude code] Tabel iterasi
+    render_section_header("📋", "Hasil Iterasi")
+    if isinstance(df, list):
+        df = pd.DataFrame(df)
+    st.dataframe(df, use_container_width=True, hide_index=True)
 
     if err is not None:
         st.warning(err)
 
+    # [yg buat claude code] Visualisasi grafik Plotly
+    render_gradient_divider()
+    render_section_header("📊", "Visualisasi")
+
+    if metode == "Polynomial Factorization" and roots is not None:
+        plot_polynomial_roots(roots, fungsi)
+    elif isinstance(df, pd.DataFrame) and not df.empty and akar is not None:
+        tab1, tab2, tab3, tab4 = st.tabs(["Grafik f(x)", "Konvergensi", "Error", "Gabungan"])
+        with tab1:
+            plot_function_with_root(
+                fungsi, akar, metode,
+                xl=xl if metode in ["Bi Section", "False Position"] else None,
+                xu=xu if metode in ["Bi Section", "False Position"] else None,
+            )
+        with tab2:
+            plot_convergence(df, metode)
+        with tab3:
+            plot_error(df, metode)
+        with tab4:
+            plot_iteration_comparison(df)
+
+    # Langkah-langkah perhitungan (LaTeX)
     # TODO: untuk polynomial factorization, log terakhir harus dibenerin
     if steps is not None:
         st.divider()
-        st.subheader("Langkah-Langkah Perhitungan 🕵️‍♂️")
+        render_section_header("🕵️‍♂️", "Langkah-Langkah Perhitungan")
         for i in range(len(steps)):
             st.markdown(steps[i])
             if i != len(steps) - 1:
-                st.space("medium")
+                st.divider()
 
-    if metode == "Polynomial Factorization":
-        st.success(
-            f"Akar-akar polinomial: {', '.join(str(f"x_{i+1} = {root}") for i, root in enumerate(roots) if not np.isnan(root))}"
+    # [yg buat claude code] Hasil akhir (styled box)
+    render_gradient_divider()
+
+    if metode == "Polynomial Factorization" and roots is not None:
+        render_success_result(
+            "Akar-akar polinomial",
+            ", ".join(f"x_{i+1} = {root}" for i, root in enumerate(roots) if not np.isnan(root)),
         )
 
     st.divider()
     if err is None:
-        st.success(f"Akar pendekatan: {akar}")
+        render_success_result("Akar pendekatan", akar)
