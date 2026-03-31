@@ -708,6 +708,7 @@ class MNewtonRaphson:
 
 #         return rows, roots, err
 
+
 class PolynomFactorization:
     def __init__(self, f: str, max_iter: int = 10) -> None:
         self.x = sp.symbols("x")
@@ -736,7 +737,8 @@ class PolynomFactorization:
             x1, x2 = self.ABC(a=A2, b=A1, c=A0)
 
             rows = [{"Iterasi": 0, "Info": "Rumus ABC langsung"}]
-            steps = [f"""
+            steps = [
+                f"""
 **Langkah:**
 
 $$
@@ -745,7 +747,8 @@ x &= \\frac{{-b \\pm \\sqrt{{b^2 - 4ac}}}}{{2a}} \\\\
 a &= {A2}, \\quad b = {A1}, \\quad c = {A0}
 \\end{{aligned}}
 $$
-"""]
+"""
+            ]
             return rows, steps, (x1, x2), None
 
         elif degree == 3:
@@ -759,7 +762,8 @@ $$
             a0 = A1
 
             rows.append({"Iterasi": 0, "b0": b0, "a1": a1, "a0": a0})
-            steps.append(f"""
+            steps.append(
+                f"""
 **Iterasi 0:**
 
 $$
@@ -768,7 +772,8 @@ a_1 &= {A2} \\\\
 a_0 &= {A1}
 \\end{{aligned}}
 $$
-""")
+"""
+            )
 
             for i in range(1, self.max_iter):
                 a0_old = a0
@@ -778,7 +783,8 @@ $$
                 a0 = custom_round(A1 - a1 * b0)
 
                 rows.append({"Iterasi": i, "b0": b0, "a1": a1, "a0": a0})
-                steps.append(f"""
+                steps.append(
+                    f"""
 **Iterasi {i}:**
 
 $$
@@ -788,7 +794,8 @@ a_1 &= {A2} - ({b0}) = {a1} \\\\
 a_0 &= {A1} - ({a1} \\cdot {b0}) = {a0}
 \\end{{aligned}}
 $$
-""")
+"""
+                )
 
             x1 = -1 * b0
             x2, x3 = self.ABC(b=a1, c=a0)
@@ -807,7 +814,8 @@ $$
             a0 = A2
 
             rows.append({"Iterasi": 0, "b0": b0, "b1": b1, "a1": a1, "a0": a0})
-            steps.append(f"""
+            steps.append(
+                f"""
 **Iterasi 0:**
 
 $$
@@ -816,7 +824,8 @@ a_1 &= {A3} \\\\
 a_0 &= {A2}
 \\end{{aligned}}
 $$
-""")
+"""
+            )
 
             for i in range(1, self.max_iter):
                 a0_old = a0
@@ -827,7 +836,8 @@ $$
                 a0 = custom_round(A2 - b0 - a1 * b1)
 
                 rows.append({"Iterasi": i, "b0": b0, "b1": b1, "a1": a1, "a0": a0})
-                steps.append(f"""
+                steps.append(
+                    f"""
 **Iterasi {i}:**
 
 $$
@@ -838,7 +848,8 @@ a_1 &= {A3} - {b1} = {a1} \\\\
 a_0 &= {A2} - {b0} - ({a1} \\cdot {b1}) = {a0}
 \\end{{aligned}}
 $$
-""")
+"""
+                )
 
             x1, x2 = self.ABC(b=b1, c=b0)
             x3, x4 = self.ABC(b=a1, c=a0)
@@ -857,8 +868,11 @@ $$
             c1 = A4
             c0 = A3
 
-            rows.append({"Iterasi": 0, "b0": b0, "b1": b1, "a0": a0, "c1": c1, "c0": c0})
-            steps.append(f"""
+            rows.append(
+                {"Iterasi": 0, "b0": b0, "b1": b1, "a0": a0, "c1": c1, "c0": c0}
+            )
+            steps.append(
+                f"""
 **Iterasi 0:**
 
 $$
@@ -867,19 +881,27 @@ c_1 &= {A4} \\\\
 c_0 &= {A3}
 \\end{{aligned}}
 $$
-""")
+"""
+            )
 
             for i in range(1, self.max_iter):
                 c0_old = c0
 
-                b0 = custom_round((A1 - a0 * A2 + a0**2 * A3 - a0**3 * A4 + a0**4) / c0_old)
-                b1 = custom_round((A2 - a0 * A3 + a0**2 * A4 - a0**3 + c1 * b0) / c0_old)
+                b0 = custom_round(
+                    (A1 - a0 * A2 + a0**2 * A3 - a0**3 * A4 + a0**4) / c0_old
+                )
+                b1 = custom_round(
+                    (A2 - a0 * A3 + a0**2 * A4 - a0**3 + c1 * b0) / c0_old
+                )
                 a0 = custom_round(A0 / (b0 * c0_old))
                 c1 = custom_round(A4 - a0 - b1)
                 c0 = custom_round(A3 - a0 * A4 + a0**2 - b0 - c1 * b1)
 
-                rows.append({"Iterasi": i, "b0": b0, "b1": b1, "a0": a0, "c1": c1, "c0": c0})
-                steps.append(f"""
+                rows.append(
+                    {"Iterasi": i, "b0": b0, "b1": b1, "a0": a0, "c1": c1, "c0": c0}
+                )
+                steps.append(
+                    f"""
 **Iterasi {i}:**
 
 $$
@@ -891,7 +913,8 @@ c_1 &= {c1} \\\\
 c_0 &= {c0}
 \\end{{aligned}}
 $$
-""")
+"""
+                )
 
             x1 = -1 * a0
             x2, x3 = self.ABC(b=b1, c=b0)
@@ -937,18 +960,22 @@ class LinearRegression:
         avg_y = custom_round(sum_y / self.n)
 
         try:
-            a1 = custom_round((self.n * sum_xy - sum_x * sum_y) / (self.n * sum_x2 - sum_x ** 2))
+            a1 = custom_round(
+                (self.n * sum_xy - sum_x * sum_y) / (self.n * sum_x2 - sum_x**2)
+            )
         except (ZeroDivisionError, ValueError):
             return pd.DataFrame(), [], None, "Pembagian dengan nol saat menghitung a1"
         a0 = custom_round(avg_y - a1 * avg_x)
 
         for i in range(self.n):
-            rows.append({
-                "x": x[i],
-                "y": y[i],
-                "x*y": xy[i],
-                "x^2": x2[i],
-            })
+            rows.append(
+                {
+                    "x": x[i],
+                    "y": y[i],
+                    "x*y": xy[i],
+                    "x^2": x2[i],
+                }
+            )
 
         step = "**Perhitungan Regresi Linear"
         match self.mode:
@@ -974,7 +1001,7 @@ class LinearRegression:
                 equation = f"{a0} + {a1}x"
                 steps.append(f"### Persamaan: $y = {a0} + {a1}x$")
             case "log":
-                a = custom_round(10 ** a0)
+                a = custom_round(10**a0)
                 equation = f"{a} * x^{a1}"
                 steps.append(f"### Persamaan: $y = {a} \\cdot x^{{{a1}}}$")
             case "exp":
@@ -1004,18 +1031,22 @@ class QuadraticRegression:
         sum_x4 = custom_round(sum([custom_round(x[i] ** 4) for i in range(self.n)]))
         sum_y = custom_round(sum(y))
         sum_xy = custom_round(sum([custom_round(x[i] * y[i]) for i in range(self.n)]))
-        sum_x2y = custom_round(sum([custom_round((x[i] ** 2) * y[i]) for i in range(self.n)]))
+        sum_x2y = custom_round(
+            sum([custom_round((x[i] ** 2) * y[i]) for i in range(self.n)])
+        )
 
         for i in range(self.n):
-            rows.append({
-                "x": x[i],
-                "y": y[i],
-                "x^2": custom_round(x[i] ** 2),
-                "x^3": custom_round(x[i] ** 3),
-                "x^4": custom_round(x[i] ** 4),
-                "x*y": custom_round(x[i] * y[i]),
-                "x^2*y": custom_round((x[i] ** 2) * y[i]),
-            })
+            rows.append(
+                {
+                    "x": x[i],
+                    "y": y[i],
+                    "x^2": custom_round(x[i] ** 2),
+                    "x^3": custom_round(x[i] ** 3),
+                    "x^4": custom_round(x[i] ** 4),
+                    "x*y": custom_round(x[i] * y[i]),
+                    "x^2*y": custom_round((x[i] ** 2) * y[i]),
+                }
+            )
 
         A = [[self.n, sum_x, sum_x2], [sum_x, sum_x2, sum_x3], [sum_x2, sum_x3, sum_x4]]
         B = [sum_y, sum_xy, sum_x2y]
@@ -1052,61 +1083,88 @@ class GaussJordan:
         self.A = [row[:] for row in A]
         self.B = B[:]
 
+    def _get_matrix(self):
+        n = len(self.A)
+        m = len(self.A[0]) if n > 0 else 0
+
+        col_format = " ".join(["c"] * m) + " | c"
+
+        latex = "$$\n\\left[\n\\begin{array}{" + col_format + "}\n"
+        for i in range(n):
+            row_str = " & ".join([f"{custom_round(self.A[i][j])}" for j in range(m)])
+            row_str += f" & {custom_round(self.B[i])}"
+
+            latex += f"    {row_str}"
+            if i < n - 1:
+                latex += " \\\\"
+            latex += "\n"
+
+        latex += "\\end{array}\n\\right]\n$$\n"
+        return latex
+
     def solve(self):
-        rows = []
         steps = []
         err = None
 
         n, m = len(self.A), len(self.A[0])
+        iterasi = 1
 
-        # Forward elimination
+        step = "**Matriks Awal:**\n" + self._get_matrix() + "\n"
+        step += "**Eliminasi Gauss-Jordan:**\n\n"
+
+        # Gauss method
         for i in range(0, min(n, m)):
-            if self.A[i][i] > 0 or self.A[i][i] < 0:
-                for j in range(i + 1, m):
-                    self.A[i][j] /= self.A[i][i]
-                self.B[i] /= self.A[i][i]
-                self.A[i][i] = 1
-                for j in range(i + 1, n):
-                    times = self.A[j][i]
-                    for k in range(0, m):
-                        self.A[j][k] -= (self.A[i][k] * times)
-                    self.B[j] -= (self.B[i] * times)
+            if self.A[i][i] != 0 and self.A[i][i] != 1:
+                pivot = self.A[i][i]
+                for j in range(i, m):
+                    self.A[i][j] /= pivot
+                self.B[i] /= pivot
 
-        # Back substitution
+                step += f"**Iterasi {iterasi}:** $B_{{{i}}} \\leftarrow \\frac{{B_{{{i}}}}}{{{custom_round(pivot)}}}$\n"
+                step += self._get_matrix()
+                iterasi += 1
+
+            for j in range(i + 1, n):
+                times = self.A[j][i]
+                if times != 0:
+                    for k in range(i, m):
+                        self.A[j][k] -= self.A[i][k] * times
+                    self.B[j] -= self.B[i] * times
+
+                    # TODO: ketika times == 1 ga perlu dikali lagi
+                    step += f"**Iterasi {iterasi}:** $B_{{{j}}} \\leftarrow B_{{{j}}} - ({custom_round(times)}) B_{{{i}}}$\n"
+                    step += self._get_matrix()
+                    iterasi += 1
+
+        # Jordan method
         for i in range(min(n, m) - 1, -1, -1):
             if self.A[i][i] == 1:
                 for j in range(i - 1, -1, -1):
                     times = self.A[j][i]
-                    for k in range(0, m):
-                        self.A[j][k] -= (self.A[i][k] * times)
-                    self.B[j] -= (self.B[i] * times)
+                    if times != 0:
+                        for k in range(0, m):
+                            self.A[j][k] -= self.A[i][k] * times
+                        self.B[j] -= self.B[i] * times
+
+                        step += f"**Iterasi {iterasi}:** $B_{{{j}}} \\leftarrow B_{{{j}}} - ({custom_round(times)}) B_{{{i}}}$\n"
+                        step += self._get_matrix()
+                        iterasi += 1
 
         for i in range(0, n):
             for j in range(0, m):
                 self.A[i][j] = custom_round(self.A[i][j])
             self.B[i] = custom_round(self.B[i])
 
-        # Build rows showing final matrix state
-        for i in range(n):
-            row = {}
-            for j in range(m):
-                row[f"A[{i}][{j}]"] = self.A[i][j]
-            row[f"B[{i}]"] = self.B[i]
-            rows.append(row)
+        step += "**Hasil Akhir Eliminasi:**\n"
+        step += self._get_matrix()
 
-        step = "**Gauss-Jordan Elimination:**\n\n"
-        step += "Hasil eliminasi:\n\n$$\n\\begin{bmatrix}\n"
-        for i in range(n):
-            row_str = " & ".join([str(self.A[i][j]) for j in range(m)])
-            row_str += f" & | & {self.B[i]}"
-            step += row_str
-            if i < n - 1:
-                step += " \\\\\n"
-        step += "\n\\end{bmatrix}\n$$\n\n"
-        step += "Solusi: " + ", ".join([f"$x_{i} = {self.B[i]}$" for i in range(n)])
+        step += "**Solusi:**\n" + ", ".join(
+            [f"$x_{{{i}}} = {self.B[i]}$" for i in range(n)]
+        )
+
         steps.append(step)
 
-        return pd.DataFrame(rows), steps, self.B, err
+        return None, steps, self.B, err
 
 
 class Jacobi:
@@ -1141,7 +1199,13 @@ class Jacobi:
             step = f"**Iterasi {iter_num + 1}:**\n\n"
             step += "$$\n\\begin{aligned}\n"
             for i in range(m):
-                sum_parts = " - ".join([f"{self.A[i][j]} \\cdot {custom_round(x[j])}" for j in range(m) if i != j])
+                sum_parts = " - ".join(
+                    [
+                        f"{self.A[i][j]} \\cdot {custom_round(x[j])}"
+                        for j in range(m)
+                        if i != j
+                    ]
+                )
                 step += f"x_{{{i+1}}} &= \\frac{{{self.B[i]} - ({sum_parts})}}{{{self.A[i][i]}}} = {custom_round(x_new[i])}"
                 if i < m - 1:
                     step += " \\\\\n"
@@ -1202,7 +1266,13 @@ class GaussSeidel:
             step = f"**Iterasi {iter_num + 1}:**\n\n"
             step += "$$\n\\begin{aligned}\n"
             for i in range(m):
-                sum_parts = " - ".join([f"{self.A[i][j]} \\cdot {custom_round(x_new[j])}" for j in range(m) if i != j])
+                sum_parts = " - ".join(
+                    [
+                        f"{self.A[i][j]} \\cdot {custom_round(x_new[j])}"
+                        for j in range(m)
+                        if i != j
+                    ]
+                )
                 step += f"x_{{{i+1}}} &= \\frac{{{self.B[i]} - ({sum_parts})}}{{{self.A[i][i]}}} = {custom_round(x_new[i])}"
                 if i < m - 1:
                     step += " \\\\\n"
@@ -1245,11 +1315,15 @@ class NewtonInterpolation:
         diff_table = [[0 for _ in range(self.n - 1)] for _ in range(self.n)]
 
         for i in range(self.n - 1):
-            diff_table[i][0] = (self.data[i + 1][1] - self.data[i][1]) / (self.data[i + 1][0] - self.data[i][0])
+            diff_table[i][0] = (self.data[i + 1][1] - self.data[i][1]) / (
+                self.data[i + 1][0] - self.data[i][0]
+            )
 
         for i in range(1, self.n - 1):
             for j in range(self.n - i - 1):
-                diff_table[j][i] = (diff_table[j + 1][i - 1] - diff_table[j][i - 1]) / (self.data[j + i + 1][0] - self.data[j][0])
+                diff_table[j][i] = (diff_table[j + 1][i - 1] - diff_table[j][i - 1]) / (
+                    self.data[j + i + 1][0] - self.data[j][0]
+                )
 
         # Round the table
         for i in range(self.n):
@@ -1278,7 +1352,9 @@ class NewtonInterpolation:
         step2 += "$$\n\\begin{aligned}\n"
         step2 += f"P({self.x}) &= {custom_round(self.data[0][1])}"
         for i in range(0, self.n - 1):
-            terms = " \\cdot ".join([f"({self.x} - {self.data[j][0]})" for j in range(i + 1)])
+            terms = " \\cdot ".join(
+                [f"({self.x} - {self.data[j][0]})" for j in range(i + 1)]
+            )
             step2 += f" + {custom_round(diff_table[0][i])} \\cdot {terms}"
         step2 += " \\\\\n"
 
@@ -1287,7 +1363,7 @@ class NewtonInterpolation:
         for i in range(0, self.n - 1):
             term = diff_table[0][i]
             for j in range(0, i + 1):
-                term *= (self.x - self.data[j][0])
+                term *= self.x - self.data[j][0]
             res += term
         res = custom_round(res)
 
@@ -1319,18 +1395,22 @@ class LagrangeInterpolation:
             den_parts = []
             for j in range(self.n):
                 if i != j:
-                    li *= (self.x - self.data[j][0]) / (self.data[i][0] - self.data[j][0])
+                    li *= (self.x - self.data[j][0]) / (
+                        self.data[i][0] - self.data[j][0]
+                    )
                     num_parts.append(f"({self.x} - {self.data[j][0]})")
                     den_parts.append(f"({self.data[i][0]} - {self.data[j][0]})")
             li = custom_round(li)
             res += li
 
-            rows.append({
-                "i": i,
-                "x_i": self.data[i][0],
-                "y_i": self.data[i][1],
-                "L_i * y_i": li,
-            })
+            rows.append(
+                {
+                    "i": i,
+                    "x_i": self.data[i][0],
+                    "y_i": self.data[i][1],
+                    "L_i * y_i": li,
+                }
+            )
 
             num_str = " \\cdot ".join(num_parts)
             den_str = " \\cdot ".join(den_parts)
@@ -1383,7 +1463,7 @@ class NewtonGregoryInterpolation:
         if idx == -1:
             return pd.DataFrame(), [], None, "x0 tidak ada dalam data"
 
-        h = (self.data[1][0] - self.data[0][0])
+        h = self.data[1][0] - self.data[0][0]
         s = (self.x - self.data[idx][0]) / h
 
         for i in range(self.n - 1):
@@ -1415,17 +1495,30 @@ class NewtonGregoryInterpolation:
             case "forward":
                 res = self.data[idx][1]
                 max_terms = self.n - 1 - idx
-                num_terms = self.orde if self.orde != -1 and self.orde < max_terms else max_terms
+                num_terms = (
+                    self.orde
+                    if self.orde != -1 and self.orde < max_terms
+                    else max_terms
+                )
                 step2 = "$$\n\\begin{aligned}\n"
                 step2 += f"P({self.x}) &= {custom_round(self.data[idx][1])}"
                 for i in range(num_terms):
                     k = i + 1
                     temp = 1
                     for j in range(k):
-                        temp *= (s - j)
+                        temp *= s - j
                     term_val = custom_round(temp * table[idx][i] / self.factorial(k))
                     res = custom_round(res + term_val)
-                    s_parts = " \\cdot ".join([f"({custom_round(s)} - {j})" if j > 0 else f"{custom_round(s)}" for j in range(k)])
+                    s_parts = " \\cdot ".join(
+                        [
+                            (
+                                f"({custom_round(s)} - {j})"
+                                if j > 0
+                                else f"{custom_round(s)}"
+                            )
+                            for j in range(k)
+                        ]
+                    )
                     step2 += f" + \\frac{{{s_parts} \\cdot {custom_round(table[idx][i])}}}{{{k}!}}"
                 step2 += f" \\\\\n&= {custom_round(res)}\n"
                 step2 += "\\end{aligned}\n$$\n\n"
@@ -1442,10 +1535,19 @@ class NewtonGregoryInterpolation:
                     k = j + 1
                     temp = 1
                     for mm in range(k):
-                        temp *= (s + mm)
+                        temp *= s + mm
                     term_val = custom_round(temp * table[i][j] / self.factorial(k))
                     res = custom_round(res + term_val)
-                    s_parts = " \\cdot ".join([f"({custom_round(s)} + {mm})" if mm > 0 else f"{custom_round(s)}" for mm in range(k)])
+                    s_parts = " \\cdot ".join(
+                        [
+                            (
+                                f"({custom_round(s)} + {mm})"
+                                if mm > 0
+                                else f"{custom_round(s)}"
+                            )
+                            for mm in range(k)
+                        ]
+                    )
                     step2 += f" + \\frac{{{s_parts} \\cdot {custom_round(table[i][j])}}}{{{k}!}}"
                     j += 1
                 step2 += f" \\\\\n&= {custom_round(res)}\n"
@@ -1485,7 +1587,7 @@ class StirlingInterpolation:
         if idx == -1:
             return pd.DataFrame(), [], None, "x0 tidak ada dalam data"
 
-        h = (self.data[1][0] - self.data[0][0])
+        h = self.data[1][0] - self.data[0][0]
         s = (self.x - self.data[idx][0]) / h
 
         for i in range(self.n - 1):
@@ -1526,11 +1628,13 @@ class StirlingInterpolation:
                     break
                 if fwd_idx >= self.n or bwd_idx >= self.n:
                     break
-                avg_diff = custom_round((table[fwd_idx][k - 1] + table[bwd_idx][k - 1]) / 2)
+                avg_diff = custom_round(
+                    (table[fwd_idx][k - 1] + table[bwd_idx][k - 1]) / 2
+                )
                 # Product: s * (s^2 - 1^2) * (s^2 - 2^2) * ... for odd k
                 temp = s
                 for j in range(1, (k + 1) // 2):
-                    temp *= (s ** 2 - j ** 2)
+                    temp *= s**2 - j**2
                 temp = custom_round(temp)
                 term_val = custom_round(temp * avg_diff / self.factorial(k))
                 res = custom_round(res + term_val)
@@ -1542,9 +1646,9 @@ class StirlingInterpolation:
                     break
                 diff_val = table[c_idx][k - 1]
                 # Product: s^2 * (s^2 - 1^2) * ... * (s^2 - ((k/2)-1)^2)
-                temp = s ** 2
+                temp = s**2
                 for j in range(1, k // 2):
-                    temp *= (s ** 2 - j ** 2)
+                    temp *= s**2 - j**2
                 temp = custom_round(temp)
                 term_val = custom_round(temp * diff_val / self.factorial(k))
                 res = custom_round(res + term_val)
@@ -1589,9 +1693,14 @@ class BesselInterpolation:
         if idx == -1:
             return pd.DataFrame(), [], None, "x0 tidak ada dalam data"
         if idx + 1 >= self.n:
-            return pd.DataFrame(), [], None, "x0 harus bukan titik terakhir untuk Bessel"
+            return (
+                pd.DataFrame(),
+                [],
+                None,
+                "x0 harus bukan titik terakhir untuk Bessel",
+            )
 
-        h = (self.data[1][0] - self.data[0][0])
+        h = self.data[1][0] - self.data[0][0]
         s = (self.x - self.data[idx][0]) / h
         u = s - 0.5
 
@@ -1643,7 +1752,7 @@ class BesselInterpolation:
                 else:
                     temp = u
                     for j in range(1, (k + 1) // 2):
-                        temp *= (u ** 2 - (j - 0.5) ** 2)
+                        temp *= u**2 - (j - 0.5) ** 2
                 temp = custom_round(temp)
                 term_val = custom_round(temp * diff_val / self.factorial(k))
                 res = custom_round(res + term_val)
@@ -1654,10 +1763,12 @@ class BesselInterpolation:
                 c_idx2 = c_idx + 1
                 if c_idx < 0 or c_idx2 >= self.n or k - 1 >= self.n - 1:
                     break
-                avg_diff = custom_round((table[c_idx][k - 1] + table[c_idx2][k - 1]) / 2)
+                avg_diff = custom_round(
+                    (table[c_idx][k - 1] + table[c_idx2][k - 1]) / 2
+                )
                 temp = 1.0
                 for j in range(k // 2):
-                    temp *= (u ** 2 - j ** 2)
+                    temp *= u**2 - j**2
                 temp = custom_round(temp)
                 term_val = custom_round(temp * avg_diff / self.factorial(k))
                 res = custom_round(res + term_val)
@@ -1710,7 +1821,7 @@ class NewtonGregoryDifferentiation:
             prod = 1
             for j in range(k):
                 if j != i:
-                    prod *= (s - j)
+                    prod *= s - j
             total += prod
         return total
 
@@ -1725,7 +1836,7 @@ class NewtonGregoryDifferentiation:
             prod = 1
             for j in range(k):
                 if j != i:
-                    prod *= (s + j)
+                    prod *= s + j
             total += prod
         return total
 
@@ -1739,7 +1850,7 @@ class NewtonGregoryDifferentiation:
         if idx == -1:
             return pd.DataFrame(), [], None, "x0 tidak ada dalam data"
 
-        h = (self.data[1][0] - self.data[0][0])
+        h = self.data[1][0] - self.data[0][0]
         s = (self.x - self.data[idx][0]) / h
 
         for i in range(self.n - 1):
@@ -1771,7 +1882,11 @@ class NewtonGregoryDifferentiation:
             case "forward":
                 res_deriv_s = 0
                 max_terms = self.n - 1 - idx
-                num_terms = self.orde if self.orde != -1 and self.orde < max_terms else max_terms
+                num_terms = (
+                    self.orde
+                    if self.orde != -1 and self.orde < max_terms
+                    else max_terms
+                )
 
                 step2 = "$$\n\\begin{aligned}\n"
                 step2 += f"P'({self.x}) &= \\frac{{1}}{{h}} \\sum \\frac{{\\Delta^k y_0}}{{k!}} \\cdot \\frac{{d}}{{ds}} \\prod_{{j=0}}^{{k-1}} (s - j) \\\\\n"
@@ -1779,7 +1894,9 @@ class NewtonGregoryDifferentiation:
                 for i in range(num_terms):
                     k = i + 1
                     deriv_prod = self._product_derivative(s, k)
-                    term_val = custom_round(deriv_prod * table[idx][i] / self.factorial(k))
+                    term_val = custom_round(
+                        deriv_prod * table[idx][i] / self.factorial(k)
+                    )
                     res_deriv_s = custom_round(res_deriv_s + term_val)
 
                 res_deriv_x = custom_round(res_deriv_s / h)
@@ -1798,7 +1915,9 @@ class NewtonGregoryDifferentiation:
                         break
                     k = j + 1
                     deriv_prod = self._product_derivative_backward(s, k)
-                    term_val = custom_round(deriv_prod * table[i][j] / self.factorial(k))
+                    term_val = custom_round(
+                        deriv_prod * table[i][j] / self.factorial(k)
+                    )
                     res_deriv_s = custom_round(res_deriv_s + term_val)
                     j += 1
 
@@ -1827,7 +1946,7 @@ class LagrangeDifferentiation:
                 if j == i or j == k:
                     continue
                 prod *= (x_val - self.data[j][0]) / (self.data[i][0] - self.data[j][0])
-            prod /= (self.data[i][0] - self.data[k][0])
+            prod /= self.data[i][0] - self.data[k][0]
             result += prod
         return result
 
@@ -1845,13 +1964,15 @@ class LagrangeDifferentiation:
             term = custom_round(self.data[i][1] * dl_i)
             res = custom_round(res + term)
 
-            rows.append({
-                "i": i,
-                "x_i": self.data[i][0],
-                "y_i": self.data[i][1],
-                "L'_i(x)": dl_i,
-                "y_i * L'_i(x)": term,
-            })
+            rows.append(
+                {
+                    "i": i,
+                    "x_i": self.data[i][0],
+                    "y_i": self.data[i][1],
+                    "L'_i(x)": dl_i,
+                    "y_i * L'_i(x)": term,
+                }
+            )
 
             step += f"L'_{{{i}}}({self.x}) &= {dl_i}, \\quad y_{{{i}}} \\cdot L'_{{{i}}} = {term}"
             if i < self.n - 1:
@@ -1867,7 +1988,7 @@ class LagrangeDifferentiation:
 
 class Integration:
     def __init__(self, f, a, b):
-        self.x = sp.symbols('x')
+        self.x = sp.symbols("x")
         self.f = sp.sympify(f)
         self.a = a
         self.b = b
@@ -1899,7 +2020,7 @@ class Integration:
 
 class TrapezoidalIntegration:
     def __init__(self, f, a, b, n=0, true_val=-1):
-        self.x = sp.symbols('x')
+        self.x = sp.symbols("x")
         self.f = sp.sympify(f)
         self.a = a
         self.b = b
@@ -1957,7 +2078,11 @@ class TrapezoidalIntegration:
             steps.append(step)
 
         if self.true_val != -1:
-            et = custom_round(abs((self.true_val - L) / self.true_val) * 100) if self.true_val != 0 else custom_round(abs(L) * 100)
+            et = (
+                custom_round(abs((self.true_val - L) / self.true_val) * 100)
+                if self.true_val != 0
+                else custom_round(abs(L) * 100)
+            )
             steps.append(f"$E_t = {et}\\%$")
 
         return pd.DataFrame(rows), steps, L, err
@@ -1965,7 +2090,7 @@ class TrapezoidalIntegration:
 
 class Simpson13Integration:
     def __init__(self, f, a, b, n=0, true_val=-1):
-        self.x = sp.symbols('x')
+        self.x = sp.symbols("x")
         self.f = sp.sympify(f)
         self.a = a
         self.b = b
@@ -2034,7 +2159,11 @@ class Simpson13Integration:
             steps.append(step)
 
         if self.true_val != -1:
-            et = custom_round(abs((self.true_val - L) / self.true_val) * 100) if self.true_val != 0 else custom_round(abs(L) * 100)
+            et = (
+                custom_round(abs((self.true_val - L) / self.true_val) * 100)
+                if self.true_val != 0
+                else custom_round(abs(L) * 100)
+            )
             steps.append(f"$E_t = {et}\\%$")
 
         return pd.DataFrame(rows), steps, L, err
@@ -2042,7 +2171,7 @@ class Simpson13Integration:
 
 class Simpson38Integration:
     def __init__(self, f, a, b, true_val=-1):
-        self.x = sp.symbols('x')
+        self.x = sp.symbols("x")
         self.f = sp.sympify(f)
         self.a = a
         self.b = b
@@ -2086,7 +2215,11 @@ class Simpson38Integration:
         steps.append(step)
 
         if self.true_val != -1:
-            et = custom_round(abs((self.true_val - L) / self.true_val) * 100) if self.true_val != 0 else custom_round(abs(L) * 100)
+            et = (
+                custom_round(abs((self.true_val - L) / self.true_val) * 100)
+                if self.true_val != 0
+                else custom_round(abs(L) * 100)
+            )
             steps.append(f"$E_t = {et}\\%$")
 
         return pd.DataFrame(rows), steps, L, err
@@ -2094,7 +2227,7 @@ class Simpson38Integration:
 
 class RiemannIntegration:
     def __init__(self, f, a, b, n, true_val=-1):
-        self.x = sp.symbols('x')
+        self.x = sp.symbols("x")
         self.f = sp.sympify(f)
         self.a = a
         self.b = b
@@ -2132,7 +2265,11 @@ class RiemannIntegration:
         steps.append(step)
 
         if self.true_val != -1:
-            et = custom_round(abs((self.true_val - L) / self.true_val) * 100) if self.true_val != 0 else custom_round(abs(L) * 100)
+            et = (
+                custom_round(abs((self.true_val - L) / self.true_val) * 100)
+                if self.true_val != 0
+                else custom_round(abs(L) * 100)
+            )
             steps.append(f"$E_t = {et}\\%$")
 
         return pd.DataFrame(rows), steps, L, err
@@ -2140,7 +2277,7 @@ class RiemannIntegration:
 
 class GaussIntegration:
     def __init__(self, f, a, b, true_val=-1):
-        self.x = sp.symbols('x')
+        self.x = sp.symbols("x")
         self.f = sp.sympify(f)
         self.a = a
         self.b = b
@@ -2183,14 +2320,20 @@ class GaussIntegration:
         step += f"Titik: $t_1 = {t1}$, $t_2 = {t2}$\n\n"
         step += "$$\n\\begin{aligned}\n"
         step += f"x_1 &= {c1} \\cdot ({t1}) + {c2} = {x1}, \\quad f(x_1) = {f1} \\\\\n"
-        step += f"x_2 &= {c1} \\cdot ({t2}) + {c2} = {x2}, \\quad f(x_2) = {f2} \\\\[1em]\n"
+        step += (
+            f"x_2 &= {c1} \\cdot ({t2}) + {c2} = {x2}, \\quad f(x_2) = {f2} \\\\[1em]\n"
+        )
         step += f"I &= \\frac{{b-a}}{{2}} [w_1 f(x_1) + w_2 f(x_2)] \\\\\n"
         step += f"&= {c1} \\cdot [{w1} \\cdot {f1} + {w2} \\cdot {f2}] = {L}\n"
         step += "\\end{aligned}\n$$\n\n"
         steps.append(step)
 
         if self.true_val != -1:
-            et = custom_round(abs((self.true_val - L) / self.true_val) * 100) if self.true_val != 0 else custom_round(abs(L) * 100)
+            et = (
+                custom_round(abs((self.true_val - L) / self.true_val) * 100)
+                if self.true_val != 0
+                else custom_round(abs(L) * 100)
+            )
             steps.append(f"$E_t = {et}\\%$")
 
         return pd.DataFrame(rows), steps, L, err
@@ -2198,7 +2341,7 @@ class GaussIntegration:
 
 class Euler:
     def __init__(self, df, a, b, h):
-        self.x = sp.symbols('x')
+        self.x = sp.symbols("x")
         self.df_expr = sp.sympify(df)
         self.a = a
         self.b = b
@@ -2236,13 +2379,15 @@ class Euler:
             elif true_integral is not None:
                 et_val = custom_round(abs(y) * 100)
 
-            rows.append({
-                "i": i,
-                "x_i": custom_round(xi),
-                "f(x_i)": fi,
-                "y_i": y,
-                "Et (%)": et_val,
-            })
+            rows.append(
+                {
+                    "i": i,
+                    "x_i": custom_round(xi),
+                    "f(x_i)": fi,
+                    "y_i": y,
+                    "Et (%)": et_val,
+                }
+            )
 
             step = f"**Langkah {i + 1}:**\n\n"
             step += "$$\n\\begin{aligned}\n"
@@ -2261,7 +2406,7 @@ class Euler:
 
 class Heunn:
     def __init__(self, df, a, b, h):
-        self.x = sp.symbols('x')
+        self.x = sp.symbols("x")
         self.df_expr = sp.sympify(df)
         self.a = a
         self.b = b
@@ -2300,14 +2445,16 @@ class Heunn:
             elif true_integral is not None:
                 et_val = custom_round(abs(y) * 100)
 
-            rows.append({
-                "i": i,
-                "x_i": custom_round(xi),
-                "f(x_i)": fi,
-                "f(x_i+h)": fi_next,
-                "y_i": y,
-                "Et (%)": et_val,
-            })
+            rows.append(
+                {
+                    "i": i,
+                    "x_i": custom_round(xi),
+                    "f(x_i)": fi,
+                    "f(x_i+h)": fi_next,
+                    "y_i": y,
+                    "Et (%)": et_val,
+                }
+            )
 
             step = f"**Langkah {i + 1}:**\n\n"
             step += "$$\n\\begin{aligned}\n"
@@ -2327,7 +2474,7 @@ class Heunn:
 
 class RungeKutta:
     def __init__(self, df, a, b, h, a2):
-        self.x = sp.symbols('x')
+        self.x = sp.symbols("x")
         self.df_expr = sp.sympify(df)
         self.a = a
         self.b = b
@@ -2372,14 +2519,16 @@ class RungeKutta:
             elif true_integral is not None:
                 et_val = custom_round(abs(y) * 100)
 
-            rows.append({
-                "i": i,
-                "x_i": custom_round(xi),
-                "k1": k1,
-                "k2": k2,
-                "y_i": y,
-                "Et (%)": et_val,
-            })
+            rows.append(
+                {
+                    "i": i,
+                    "x_i": custom_round(xi),
+                    "k1": k1,
+                    "k2": k2,
+                    "y_i": y,
+                    "Et (%)": et_val,
+                }
+            )
 
             step = f"**Langkah {i + 1}:**\n\n"
             step += "$$\n\\begin{aligned}\n"
