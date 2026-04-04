@@ -1,7 +1,6 @@
-from typing import Literal
 import sympy as sp
 import pandas as pd
-from utils import custom_round, Ea, Et
+from utils import custom_round, Ea, Et, sign
 import numpy as np
 
 
@@ -991,22 +990,19 @@ class LinearRegression:
         step += f"\\sum x^2 &= {sum_x2} \\\\\n"
         step += f"\\bar{{x}} &= {avg_x} \\\\\n"
         step += f"\\bar{{y}} &= {avg_y} \\\\[1em]\n"
-        step += f"a_1 &= \\frac{{n \\sum xy - \\sum x \\sum y}}{{n \\sum x^2 - (\\sum x)^2}} = \\frac{{{self.n} \\cdot {sum_xy} - {sum_x} \\cdot {sum_y}}}{{{self.n} \\cdot {sum_x2} - ({sum_x})^2}} = {a1} \\\\\n"
+        step += f"a_1 &= \\frac{{n \\sum xy - \\sum x \\sum y}}{{n \\sum x^2 - (\\sum x)^2}} = \\frac{{({self.n}) \\cdot ({sum_xy}) - ({sum_x}) \\cdot ({sum_y})}}{{({self.n}) \\cdot ({sum_x2}) - ({sum_x})^2}} = {a1} \\\\\n"
         step += f"a_0 &= \\bar{{y}} - a_1 \\bar{{x}} = {avg_y} - {a1} \\cdot {avg_x} = {a0}\n"
         step += "\\end{aligned}\n$$\n\n"
         steps.append(step)
 
         match self.mode:
             case "std":
-                equation = f"{a0} + {a1}x"
-                steps.append(f"### Persamaan: $y = {a0} + {a1}x$")
+                steps.append(f"### Persamaan: $y = {a0} {sign(a1)} {a1}x$")
             case "log":
                 a = custom_round(10**a0)
-                equation = f"{a} * x^{a1}"
                 steps.append(f"### Persamaan: $y = {a} \\cdot x^{{{a1}}}$")
             case "exp":
                 a = custom_round(np.exp(a0))
-                equation = f"{a} * e^({a1}x)"
                 steps.append(f"### Persamaan: $y = {a} \\cdot e^{{{a1}x}}$")
 
         return pd.DataFrame(rows), steps, (a0, a1), err
@@ -1073,7 +1069,7 @@ class QuadraticRegression:
 
         steps.extend(gj_steps)
         a0, a1, a2 = custom_round(a[0]), custom_round(a[1]), custom_round(a[2])
-        steps.append(f"### Persamaan: $y = {a0} + {a1}x + {a2}x^2$")
+        steps.append(f"### Persamaan: $y = {a0} {sign(a1)} {a1}x {sign(a2)} {a2}x^2$")
 
         return pd.DataFrame(rows), steps, (a0, a1, a2), err
 
@@ -1131,8 +1127,7 @@ class GaussJordan:
                         self.A[j][k] -= self.A[i][k] * times
                     self.B[j] -= self.B[i] * times
 
-                    # TODO: ketika times == 1 ga perlu dikali lagi
-                    step += f"**Iterasi {iterasi}:** $B_{{{j}}} \\leftarrow B_{{{j}}} - ({custom_round(times)}) B_{{{i}}}$\n"
+                    step += f"**Iterasi {iterasi}:** $B_{{{j}}} \\leftarrow B_{{{j}}} - {f'({custom_round(times)})' if times != 1 else ''}B_{{{i}}}$\n"
                     step += self._get_matrix()
                     iterasi += 1
 
@@ -1146,7 +1141,7 @@ class GaussJordan:
                             self.A[j][k] -= self.A[i][k] * times
                         self.B[j] -= self.B[i] * times
 
-                        step += f"**Iterasi {iterasi}:** $B_{{{j}}} \\leftarrow B_{{{j}}} - ({custom_round(times)}) B_{{{i}}}$\n"
+                        step += f"**Iterasi {iterasi}:** $B_{{{j}}} \\leftarrow B_{{{j}}} - {f'({custom_round(times)})' if times != 1 else ''}B_{{{i}}}$\n"
                         step += self._get_matrix()
                         iterasi += 1
 
@@ -1183,6 +1178,17 @@ class Jacobi:
         x = np.zeros((m,))
         x_new = x.copy()
 
+        # initial value
+        rows.append({"Iterasi": 0, **{f"x{i+1}": custom_round(x[i]) for i in range(m)}})
+        step = f"**Iterasi 0:**\n\n"
+        step += "$$\n\\begin{aligned}\n"
+        for i in range(m):
+            step += f"x_{{{i+1}}} &= 0"
+            if i < m - 1:
+                step += " \\\\\n"
+        step += "\n\\end{aligned}\n$$\n\n"
+        steps.append(step)
+
         for iter_num in range(self.max_iter):
             for i in range(m):
                 sum_v = 0
@@ -1201,14 +1207,14 @@ class Jacobi:
             for i in range(m):
                 sum_parts = " - ".join(
                     [
-                        f"{self.A[i][j]} \\cdot {custom_round(x[j])}"
+                        f"\\left({self.A[i][j]}\\right) \\cdot \\left({custom_round(x[j])}\\right)"
                         for j in range(m)
                         if i != j
                     ]
                 )
-                step += f"x_{{{i+1}}} &= \\frac{{{self.B[i]} - ({sum_parts})}}{{{self.A[i][i]}}} = {custom_round(x_new[i])}"
+                step += f"x_{{{i+1}}} &= \\frac{{{self.B[i]} - {sum_parts}}}{{{self.A[i][i]}}} = {custom_round(x_new[i])}"
                 if i < m - 1:
-                    step += " \\\\\n"
+                    step += " \\\\[1em]\n"
             step += "\n\\end{aligned}\n$$\n\n"
             steps.append(step)
 
@@ -1216,7 +1222,7 @@ class Jacobi:
             converged = True
             i = 0
             while i < m:
-                if x_new[i] - x[i] > self.tol:
+                if abs(x_new[i] - x[i]) > self.tol:
                     converged = False
                     break
                 i += 1
@@ -1250,50 +1256,61 @@ class GaussSeidel:
         x = np.zeros((m,))
         x_new = x.copy()
 
+        # initial value
+        rows.append({"Iterasi": 0, **{f"x{i+1}": custom_round(x[i]) for i in range(m)}})
+        step = f"**Iterasi 0:**\n\n"
+        step += "$$\n\\begin{aligned}\n"
+        for i in range(m):
+            step += f"x_{{{i+1}}} &= 0"
+            if i < m - 1:
+                step += " \\\\\n"
+        step += "\n\\end{aligned}\n$$\n\n"
+        steps.append(step)
+
         for iter_num in range(self.max_iter):
+            step = f"**Iterasi {iter_num + 1}:**\n\n"
+            step += "$$\n\\begin{aligned}\n"
+
             for i in range(m):
                 sum_v = 0
+                sum_parts_list = []
+
                 for j in range(m):
                     if i != j:
                         sum_v += self.A[i][j] * x_new[j]
+                        sum_parts_list.append(
+                            f"\\left({self.A[i][j]}\\right) \\cdot \\left({custom_round(x_new[j])}\\right)"
+                        )
+
                 x_new[i] = (self.B[i] - sum_v) / self.A[i][i]
+
+                sum_parts = " - ".join(sum_parts_list)
+                step += f"x_{{{i+1}}} &= \\frac{{{self.B[i]} - {sum_parts}}}{{{self.A[i][i]}}} = {custom_round(x_new[i])}"
+                if i < m - 1:
+                    step += " \\\\[1em]\n"
+
+            step += "\n\\end{aligned}\n$$\n\n"
+            steps.append(step)
 
             row = {"Iterasi": iter_num + 1}
             for i in range(m):
                 row[f"x{i+1}"] = custom_round(x_new[i])
             rows.append(row)
 
-            step = f"**Iterasi {iter_num + 1}:**\n\n"
-            step += "$$\n\\begin{aligned}\n"
-            for i in range(m):
-                sum_parts = " - ".join(
-                    [
-                        f"{self.A[i][j]} \\cdot {custom_round(x_new[j])}"
-                        for j in range(m)
-                        if i != j
-                    ]
-                )
-                step += f"x_{{{i+1}}} &= \\frac{{{self.B[i]} - ({sum_parts})}}{{{self.A[i][i]}}} = {custom_round(x_new[i])}"
-                if i < m - 1:
-                    step += " \\\\\n"
-            step += "\n\\end{aligned}\n$$\n\n"
-            steps.append(step)
-
-            # Check convergence
             converged = True
-            i = 0
-            while i < m:
-                if x_new[i] - x[i] > self.tol:
+            for i in range(m):
+                if abs(x_new[i] - x[i]) > self.tol:
                     converged = False
                     break
-                i += 1
 
             if converged:
                 x = x_new.copy()
                 steps.append(f"### **Konvergen** pada iterasi ke-{iter_num + 1}")
                 break
+
             x = x_new.copy()
 
+        # Finalisasi output
         for i in range(m):
             x[i] = custom_round(x[i])
 
