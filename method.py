@@ -1350,29 +1350,31 @@ class NewtonInterpolation:
 
         # Build rows
         for i in range(self.n):
-            row = {"x": self.data[i][0], "y": self.data[i][1]}
+            row = {"x": self.data[i][0], "f(x)": self.data[i][1]}
             for j in range(self.n - 1):
-                row[f"f[{j+1}]"] = diff_table[i][j] if diff_table[i][j] != 0 else ""
+                row[f"Δ{f'{j + 1}' if j + 1 > 1 else ''}f"] = (
+                    diff_table[i][j] if diff_table[i][j] != 0 else np.nan
+                )
             rows.append(row)
 
-        step = "**Tabel Divided Difference:**\n\n"
-        step += "Koefisien: "
-        coeffs = [custom_round(self.data[0][1])]
+        step = "**Koefisien:**\n\n"
+        step += "$$\n\\begin{aligned}\n"
+        step += f"b_0 = {self.data[0][1]} \\\\\n"
         for i in range(self.n - 1):
-            coeffs.append(custom_round(diff_table[0][i]))
-        step += ", ".join([str(c) for c in coeffs])
+            step += f"b_{{{i + 1}}} = {diff_table[0][i]} \\\\\n"
+        step += "\n\\end{aligned}\n$$\n\n"
         step += "\n\n"
         steps.append(step)
 
         res = self.data[0][1]
         step2 = f"**Evaluasi polinomial di $x = {self.x}$:**\n\n"
         step2 += "$$\n\\begin{aligned}\n"
-        step2 += f"P({self.x}) &= {custom_round(self.data[0][1])}"
+        step2 += f"P({self.x}) \\; =& \\quad {custom_round(self.data[0][1])} \\\\\n"
         for i in range(0, self.n - 1):
             terms = " \\cdot ".join(
                 [f"({self.x} - {self.data[j][0]})" for j in range(i + 1)]
             )
-            step2 += f" + {custom_round(diff_table[0][i])} \\cdot {terms}"
+            step2 += f"& + {custom_round(diff_table[0][i])} \\cdot {terms} \\\\\n"
         step2 += " \\\\\n"
 
         # Compute result
@@ -1384,7 +1386,7 @@ class NewtonInterpolation:
             res += term
         res = custom_round(res)
 
-        step2 += f"&= {res}\n"
+        step2 += f"=& \\; {res}\n"
         step2 += "\\end{aligned}\n$$\n\n"
         steps.append(step2)
 
@@ -1433,14 +1435,21 @@ class LagrangeInterpolation:
             den_str = " \\cdot ".join(den_parts)
             step += f"L_{{{i}}} \\cdot y_{{{i}}} &= {self.data[i][1]} \\cdot \\frac{{{num_str}}}{{{den_str}}} = {li}"
             if i < self.n - 1:
-                step += " \\\\\n"
+                step += " \\\\[1em]\n"
 
         res = custom_round(res)
-        step += f" \\\\[1em]\nP({self.x}) &= {res}\n"
         step += "\\end{aligned}\n$$\n\n"
+
+        step += "$$\n\\begin{aligned}\n"
+        step += f"P({self.x}) &= " + " + ".join(
+            [f"L_{{{i}}} \\cdot y_{{{i}}}" for i in range(self.n)]
+        )
+        step += f" \\\\\n&= {res}\n"
+        step += "\n\\end{aligned}\n$$\n\n"
+
         steps.append(step)
 
-        return pd.DataFrame(rows), steps, res, err
+        return None, steps, res, err
 
 
 class NewtonGregoryInterpolation:
