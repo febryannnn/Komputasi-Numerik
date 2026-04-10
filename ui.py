@@ -460,7 +460,9 @@ def plot_convergence(df: pd.DataFrame, method_name: str):
             mode="lines+markers",
             name=f"Nilai {x_col}",
             line=dict(color=COLORS["primary"], width=3),
-            marker=dict(size=8, color=COLORS["primary"], line=dict(width=2, color="white")),
+            marker=dict(
+                size=8, color=COLORS["primary"], line=dict(width=2, color="white")
+            ),
             fill="tozeroy",
             fillcolor="rgba(108,99,255,0.1)",
         )
@@ -480,7 +482,7 @@ def plot_convergence(df: pd.DataFrame, method_name: str):
     fig.update_xaxes(title_text="Iterasi", dtick=1)
     fig.update_yaxes(title_text="Nilai x")
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 
 def plot_error(df: pd.DataFrame, method_name: str):
@@ -510,7 +512,10 @@ def plot_error(df: pd.DataFrame, method_name: str):
         )
 
     if has_ea:
-        ea_vals = [v if v is not None and not (isinstance(v, float) and np.isnan(v)) else None for v in df["Ea (%)"].tolist()]
+        ea_vals = [
+            v if v is not None and not (isinstance(v, float) and np.isnan(v)) else None
+            for v in df["Ea (%)"].tolist()
+        ]
         fig.add_trace(
             go.Scatter(
                 x=iterations,
@@ -527,10 +532,12 @@ def plot_error(df: pd.DataFrame, method_name: str):
     fig.update_xaxes(title_text="Iterasi", dtick=1)
     fig.update_yaxes(title_text="Error (%)")
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 
-def plot_function_with_root(fungsi_str: str, root: float, method_name: str, xl=None, xu=None):
+def plot_function_with_root(
+    fungsi_str: str, root: float, method_name: str, xl=None, xu=None
+):
     """Plot the function f(x) with the root marked."""
     import sympy as sp
 
@@ -611,7 +618,7 @@ def plot_function_with_root(fungsi_str: str, root: float, method_name: str, xl=N
     fig.update_xaxes(title_text="x")
     fig.update_yaxes(title_text="f(x)")
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 
 def plot_polynomial_roots(roots, fungsi_str: str):
@@ -655,7 +662,13 @@ def plot_polynomial_roots(roots, fungsi_str: str):
     )
     fig.add_hline(y=0, line_color="#8892B0", line_width=1, line_dash="dot")
 
-    colors_roots = [COLORS["success"], COLORS["accent"], COLORS["secondary"], COLORS["warning"], "#E040FB"]
+    colors_roots = [
+        COLORS["success"],
+        COLORS["accent"],
+        COLORS["secondary"],
+        COLORS["warning"],
+        "#E040FB",
+    ]
     for i, r in enumerate(valid_roots):
         try:
             ry = float(f_lambda(r))
@@ -679,7 +692,7 @@ def plot_polynomial_roots(roots, fungsi_str: str):
     _chart_layout(fig, "Grafik Polinomial & Akar-Akar")
     fig.update_xaxes(title_text="x")
     fig.update_yaxes(title_text="f(x)")
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 
 def plot_iteration_comparison(df: pd.DataFrame):
@@ -740,7 +753,10 @@ def plot_iteration_comparison(df: pd.DataFrame):
             col=1,
         )
     if has_ea:
-        ea_vals = [v if v is not None and not (isinstance(v, float) and np.isnan(v)) else 0 for v in df["Ea (%)"].tolist()]
+        ea_vals = [
+            v if v is not None and not (isinstance(v, float) and np.isnan(v)) else 0
+            for v in df["Ea (%)"].tolist()
+        ]
         fig.add_trace(
             go.Bar(
                 x=iterations,
@@ -768,4 +784,4 @@ def plot_iteration_comparison(df: pd.DataFrame):
         fig.update_yaxes(gridcolor="#2D3148", row=i, col=1)
     fig.update_xaxes(title_text="Iterasi", row=2, col=1, dtick=1)
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
