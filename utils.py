@@ -42,3 +42,11 @@ def Ea(approx: float, approx_old: float) -> float:
     if approx == 0:
         return float("inf") if approx_old != 0 else 0
     return custom_round(abs((approx - approx_old) / approx) * 100)
+
+
+def sign(num: float | int) -> str:
+    # untuk string, jika num > 0 kita tambahkan +
+    if num > 0:
+        return "+"
+
+    return ""

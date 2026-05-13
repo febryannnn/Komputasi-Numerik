@@ -60,30 +60,46 @@ render_header()
 # ── Kategori & Metode ──
 KATEGORI = {
     "Pencarian Akar": [
-        "Bi Section", "False Position", "Fixed Point",
-        "Newton Raphson", "Secant", "Modified Newton Raphson",
+        "Bi Section",
+        "False Position",
+        "Fixed Point",
+        "Newton Raphson",
+        "Secant",
+        "Modified Newton Raphson",
         "Polynomial Factorization",
     ],
     "Sistem Persamaan Linear": [
-        "Gauss-Jordan", "Jacobi", "Gauss-Seidel",
+        "Gauss-Jordan",
+        "Jacobi",
+        "Gauss-Seidel",
     ],
     "Regresi": [
-        "Regresi Linear", "Regresi Kuadratik",
+        "Regresi Linear",
+        "Regresi Kuadratik",
     ],
     "Interpolasi": [
-        "Interpolasi Newton", "Interpolasi Lagrange",
-        "Interpolasi Newton-Gregory", "Interpolasi Stirling",
+        "Interpolasi Newton",
+        "Interpolasi Lagrange",
+        "Interpolasi Newton-Gregory",
+        "Interpolasi Stirling",
         "Interpolasi Bessel",
     ],
     "Diferensiasi": [
-        "Diferensiasi Newton-Gregory", "Diferensiasi Lagrange",
+        "Diferensiasi Newton-Gregory",
+        "Diferensiasi Lagrange",
     ],
     "Integrasi": [
-        "Integrasi (Exact)", "Trapesium", "Simpson 1/3",
-        "Simpson 3/8", "Riemann", "Gauss",
+        "Integrasi (Exact)",
+        "Trapesium",
+        "Simpson 1/3",
+        "Simpson 3/8",
+        "Riemann",
+        "Gauss",
     ],
     "ODE (Persamaan Diferensial)": [
-        "Euler", "Heunn", "Runge-Kutta",
+        "Euler",
+        "Heunn",
+        "Runge-Kutta",
     ],
 }
 
@@ -92,6 +108,7 @@ metode = st.selectbox("Pilih Metode", KATEGORI[kategori])
 
 # [yg buat claude code] Kartu info metode
 render_method_info(metode)
+
 
 # ── Helper: parse data points dari text area ──
 def parse_data(text):
@@ -102,6 +119,7 @@ def parse_data(text):
             data.append((float(parts[0].strip()), float(parts[1].strip())))
     return data
 
+
 # ── Helper: parse matrix dari text area ──
 def parse_matrix(text):
     matrix = []
@@ -109,6 +127,7 @@ def parse_matrix(text):
         row = [float(v.strip()) for v in line.strip().split(",")]
         matrix.append(row)
     return matrix
+
 
 def parse_vector(text):
     return [float(v.strip()) for v in text.strip().split(",")]
@@ -125,7 +144,11 @@ if kategori == "Pencarian Akar":
 
     if mode_input == "Manual":
         fungsi = st.text_input(
-            "Masukkan fungsi f(x)" if metode != "Fixed Point" else "Masukkan fungsi x_(i+1)",
+            (
+                "Masukkan fungsi f(x)"
+                if metode != "Fixed Point"
+                else "Masukkan fungsi x_(i+1)"
+            ),
             "10*x**3 - 220*x**2 - 630*x + 3600",
         )
     else:
@@ -137,7 +160,9 @@ if kategori == "Pencarian Akar":
             with col1:
                 coef = st.number_input("Koefisien", value=1.0, key=f"coef_{i}")
             with col2:
-                pangkat = st.number_input("Pangkat x", min_value=0, max_value=20, value=1, key=f"pow_{i}")
+                pangkat = st.number_input(
+                    "Pangkat x", min_value=0, max_value=20, value=1, key=f"pow_{i}"
+                )
             if coef != 0:
                 if pangkat == 0:
                     terms.append(f"{coef}")
@@ -178,7 +203,9 @@ if kategori == "Pencarian Akar":
 # -- SPL --
 elif kategori == "Sistem Persamaan Linear":
     st.subheader("Input Matriks")
-    matrix_text = st.text_area("Matriks A (per baris, pisah koma)", "2, 1, -1\n1, 3, 2\n1, -1, 2")
+    matrix_text = st.text_area(
+        "Matriks A (per baris, pisah koma)", "2, 1, -1\n1, 3, 2\n1, -1, 2"
+    )
     vector_text = st.text_input("Vektor B (pisah koma)", "8, 13, 7")
     if metode in ["Jacobi", "Gauss-Seidel"]:
         tol = st.number_input("Toleransi", value=0.1)
@@ -187,7 +214,10 @@ elif kategori == "Sistem Persamaan Linear":
 # -- Regresi --
 elif kategori == "Regresi":
     st.subheader("Input Data")
-    data_text = st.text_area("Data (x, y per baris)", "1, 0.5\n2, 2.5\n3, 2.0\n4, 4.0\n5, 3.5\n6, 6.0\n7, 5.5")
+    data_text = st.text_area(
+        "Data (x, y per baris)",
+        "1, 0.5\n2, 2.5\n3, 2.0\n4, 4.0\n5, 3.5\n6, 6.0\n7, 5.5",
+    )
     if metode == "Regresi Linear":
         reg_mode = st.selectbox("Mode Regresi", ["std", "log", "exp"])
 
@@ -196,7 +226,11 @@ elif kategori == "Interpolasi":
     st.subheader("Input Data")
     data_text = st.text_area("Data (x, y per baris)", "1, 1\n2, 8\n3, 27\n4, 64")
     x_val = st.number_input("Nilai x yang dicari", value=2.5)
-    if metode in ["Interpolasi Newton-Gregory", "Interpolasi Stirling", "Interpolasi Bessel"]:
+    if metode in [
+        "Interpolasi Newton-Gregory",
+        "Interpolasi Stirling",
+        "Interpolasi Bessel",
+    ]:
         x0_val = st.number_input("x0 (titik acuan)", value=1.0)
         orde = st.number_input("Orde (-1 = max)", value=-1)
     if metode == "Interpolasi Newton-Gregory":
@@ -307,7 +341,9 @@ if st.button("Hitung"):
         df, steps, result, err = solver.solve()
     elif metode == "Interpolasi Newton-Gregory":
         data = parse_data(data_text)
-        solver = NewtonGregoryInterpolation(data, x=x_val, x0=x0_val, orde=orde, mode=ng_mode)
+        solver = NewtonGregoryInterpolation(
+            data, x=x_val, x0=x0_val, orde=orde, mode=ng_mode
+        )
         df, steps, result, err = solver.solve()
     elif metode == "Interpolasi Stirling":
         data = parse_data(data_text)
@@ -321,7 +357,9 @@ if st.button("Hitung"):
     # -- Diferensiasi --
     elif metode == "Diferensiasi Newton-Gregory":
         data = parse_data(data_text)
-        solver = NewtonGregoryDifferentiation(data, x=x_val, x0=x0_val, orde=orde, mode=diff_mode)
+        solver = NewtonGregoryDifferentiation(
+            data, x=x_val, x0=x0_val, orde=orde, mode=diff_mode
+        )
         df, steps, result, err = solver.solve()
     elif metode == "Diferensiasi Lagrange":
         data = parse_data(data_text)
@@ -333,7 +371,9 @@ if st.button("Hitung"):
         solver = Integration(fungsi, a_val, b_val)
         df, steps, result, err = solver.solve()
     elif metode == "Trapesium":
-        solver = TrapezoidalIntegration(fungsi, a_val, b_val, n=n_seg, true_val=true_val)
+        solver = TrapezoidalIntegration(
+            fungsi, a_val, b_val, n=n_seg, true_val=true_val
+        )
         df, steps, result, err = solver.solve()
     elif metode == "Simpson 1/3":
         solver = Simpson13Integration(fungsi, a_val, b_val, n=n_seg, true_val=true_val)
@@ -369,11 +409,12 @@ if st.button("Hitung"):
         st.stop()
 
     # Tabel
-    render_section_header("📋", "Hasil Iterasi")
-    if isinstance(df, list):
-        df = pd.DataFrame(df)
     if df is not None:
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        render_section_header("📋", "Hasil Iterasi")
+        if isinstance(df, list):
+            df = pd.DataFrame(df)
+
+        st.dataframe(df, width="stretch", hide_index=True)
 
     if err is not None:
         st.warning(err)
@@ -386,10 +427,14 @@ if st.button("Hitung"):
         if metode == "Polynomial Factorization" and roots is not None:
             plot_polynomial_roots(roots, fungsi)
         elif isinstance(df, pd.DataFrame) and not df.empty and akar is not None:
-            tab1, tab2, tab3, tab4 = st.tabs(["Grafik f(x)", "Konvergensi", "Error", "Gabungan"])
+            tab1, tab2, tab3, tab4 = st.tabs(
+                ["Grafik f(x)", "Konvergensi", "Error", "Gabungan"]
+            )
             with tab1:
                 plot_function_with_root(
-                    fungsi, akar, metode,
+                    fungsi,
+                    akar,
+                    metode,
                     xl=xl if metode in ["Bi Section", "False Position"] else None,
                     xu=xu if metode in ["Bi Section", "False Position"] else None,
                 )
@@ -415,7 +460,11 @@ if st.button("Hitung"):
     if metode == "Polynomial Factorization" and roots is not None:
         render_success_result(
             "Akar-akar polinomial",
-            ", ".join(f"x_{i+1} = {root}" for i, root in enumerate(roots) if not np.isnan(root)),
+            ", ".join(
+                f"x_{i+1} = {root}"
+                for i, root in enumerate(roots)
+                if not np.isnan(root)
+            ),
         )
     elif result is not None and err is None:
         render_success_result("Hasil", result)
