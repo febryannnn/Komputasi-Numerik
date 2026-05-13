@@ -225,10 +225,11 @@ elif kategori == "Integrasi":
 # -- ODE --
 elif kategori == "ODE (Persamaan Diferensial)":
     st.subheader("Input ODE")
-    fungsi = st.text_input("dy/dx = f(x)", "2*x")
+    fungsi = st.text_input("dy/dx = f(x)", "-2*x**3 + 12*x**2 - 20*x + 8.5")
     a_val = st.number_input("x awal (a)", value=0.0)
-    b_val = st.number_input("x akhir (b)", value=1.0)
-    h_val = st.number_input("Step size (h)", value=0.25)
+    b_val = st.number_input("x akhir (b)", value=4.0)
+    h_val = st.number_input("Step size (h)", value=0.5)
+    y0_val = st.number_input("Nilai awal y0", value=1.0)
     if metode == "Runge-Kutta":
         a2_val = st.number_input("a2", value=0.5)
 
@@ -349,13 +350,13 @@ if st.button("Hitung"):
 
     # -- ODE --
     elif metode == "Euler":
-        solver = Euler(fungsi, a_val, b_val, h_val)
+        solver = Euler(fungsi, a_val, b_val, h_val, y0_val)
         df, steps, result, err = solver.solve()
     elif metode == "Heunn":
-        solver = Heunn(fungsi, a_val, b_val, h_val)
+        solver = Heunn(fungsi, a_val, b_val, h_val, y0_val)
         df, steps, result, err = solver.solve()
     elif metode == "Runge-Kutta":
-        solver = RungeKutta(fungsi, a_val, b_val, h_val, a2_val)
+        solver = RungeKutta(fungsi, a_val, b_val, h_val, a2_val, y0_val)
         df, steps, result, err = solver.solve()
 
     # ══════════════════════════════════════════════

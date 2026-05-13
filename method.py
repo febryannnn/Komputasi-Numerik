@@ -2197,112 +2197,197 @@ class GaussIntegration:
 
 
 class Euler:
-    def __init__(self, df, a, b, h):
+    def __init__(self, df, a, b, h, y0):
         self.x = sp.symbols('x')
         self.df_expr = sp.sympify(df)
         self.a = a
         self.b = b
         self.h = h
+        self.y0 = y0
 
-    def evaluate(self, val):
-        return float(self.df_expr.subs(self.x, val))
+    def evaluate(self, expr, val):
+        return float(expr.subs(self.x, val))
 
     def solve(self):
         rows = []
         steps = []
         err = None
 
-        # True value from integration
+        # Exact solution
         try:
-            true_integral = float(sp.integrate(self.df_expr, (self.x, self.a, self.b)))
+            F = sp.integrate(self.df_expr)
+
+            C = self.y0 - F.subs(self.x, self.a)
+
+            true_f = F + C
+
         except Exception:
-            true_integral = None
+            true_f = None
 
         n_steps = int((self.b - self.a) / self.h)
-        y = 0.0
+
+        y = self.y0
         xi = self.a
 
         step_header = f"**Metode Euler:**\n\n$h = {self.h}$\n\n"
         steps.append(step_header)
 
+        rows.append({
+            "i": 0,
+            "x_i": custom_round(xi),
+            "f(x_i)": custom_round(self.evaluate(self.df_expr, xi)),
+            "y_i": custom_round(y),
+            "Et (%)": ""
+        })
+
         for i in range(n_steps):
-            fi = custom_round(self.evaluate(xi))
+
+            fi = custom_round(self.evaluate(self.df_expr, xi))
+
             y_old = custom_round(y)
+
             y = custom_round(y + fi * self.h)
 
+            xi_next = custom_round(xi + self.h)
+
             et_val = ""
-            if true_integral is not None and true_integral != 0:
-                et_val = custom_round(abs((true_integral - y) / true_integral) * 100)
-            elif true_integral is not None:
-                et_val = custom_round(abs(y) * 100)
+
+            if true_f is not None:
+                true_val = custom_round(
+                    self.evaluate(true_f, xi_next)
+                )
+
+                if true_val != 0:
+                    et_val = custom_round(
+                        abs((true_val - y) / true_val) * 100
+                    )
+                else:
+                    et_val = custom_round(abs(y) * 100)
 
             rows.append({
-                "i": i,
-                "x_i": custom_round(xi),
+                "i": i + 1,
+                "x_i": xi_next,
                 "f(x_i)": fi,
                 "y_i": y,
                 "Et (%)": et_val,
             })
 
             step = f"**Langkah {i + 1}:**\n\n"
+
             step += "$$\n\\begin{aligned}\n"
+
             step += f"f({custom_round(xi)}) &= {fi} \\\\\n"
-            step += f"y_{{{i+1}}} &= {y_old} + {fi} \\cdot {self.h} = {y}\n"
+
+            step += (
+                f"y_{{{i+1}}} &= "
+                f"{y_old} + ({fi})({self.h}) \\\\\n"
+            )
+
+            step += f"&= {y}\n"
+
             step += "\\end{aligned}\n$$\n\n"
+
+            if true_f is not None:
+                step += (
+                    f"Nilai sejati: "
+                    f"$y({xi_next}) = {true_val}$\n\n"
+                )
+
             steps.append(step)
 
-            xi = custom_round(xi + self.h)
+            xi = xi_next
 
-        if true_integral is not None:
-            steps.append(f"Nilai sejati (integrasi): ${custom_round(true_integral)}$")
-
-        return pd.DataFrame(rows), steps, custom_round(y), err
-
+        return (
+            pd.DataFrame(rows),
+            steps,
+            custom_round(y),
+            err
+        )
 
 class Heunn:
-    def __init__(self, df, a, b, h):
+    def __init__(self, df, a, b, h, y0):
         self.x = sp.symbols('x')
         self.df_expr = sp.sympify(df)
         self.a = a
         self.b = b
         self.h = h
+        self.y0 = y0
 
-    def evaluate(self, val):
-        return float(self.df_expr.subs(self.x, val))
+    def evaluate(self, expr, val):
+        return float(expr.subs(self.x, val))
 
     def solve(self):
         rows = []
         steps = []
         err = None
 
-        # True value from integration
+        # Exact solution
         try:
-            true_integral = float(sp.integrate(self.df_expr, (self.x, self.a, self.b)))
+            F = sp.integrate(self.df_expr)
+
+            C = self.y0 - F.subs(self.x, self.a)
+
+            true_f = F + C
+
         except Exception:
-            true_integral = None
+            true_f = None
 
         n_steps = int((self.b - self.a) / self.h)
-        y = 0.0
+
+        y = self.y0
         xi = self.a
 
         step_header = f"**Metode Heun:**\n\n$h = {self.h}$\n\n"
         steps.append(step_header)
 
+        rows.append({
+            "i": 0,
+            "x_i": custom_round(xi),
+            "f(x_i)": custom_round(self.evaluate(self.df_expr, xi)),
+            "f(x_i+h)": "",
+            "y_i": custom_round(y),
+            "Et (%)": ""
+        })
+
         for i in range(n_steps):
-            fi = custom_round(self.evaluate(xi))
-            fi_next = custom_round(self.evaluate(xi + self.h))
+
+            fi = custom_round(
+                self.evaluate(self.df_expr, xi)
+            )
+
+            fi_next = custom_round(
+                self.evaluate(
+                    self.df_expr,
+                    xi + self.h
+                )
+            )
+
             y_old = custom_round(y)
-            y = custom_round(y + (fi + fi_next) / 2 * self.h)
+
+            y = custom_round(
+                y + (fi + fi_next) / 2 * self.h
+            )
+
+            xi_next = custom_round(xi + self.h)
 
             et_val = ""
-            if true_integral is not None and true_integral != 0:
-                et_val = custom_round(abs((true_integral - y) / true_integral) * 100)
-            elif true_integral is not None:
-                et_val = custom_round(abs(y) * 100)
+
+            if true_f is not None:
+
+                true_val = custom_round(
+                    self.evaluate(true_f, xi_next)
+                )
+
+                if true_val != 0:
+                    et_val = custom_round(
+                        abs((true_val - y) / true_val) * 100
+                    )
+                else:
+                    et_val = custom_round(abs(y) * 100)
 
             rows.append({
-                "i": i,
-                "x_i": custom_round(xi),
+                "i": i + 1,
+                "x_i": xi_next,
                 "f(x_i)": fi,
                 "f(x_i+h)": fi_next,
                 "y_i": y,
@@ -2310,32 +2395,58 @@ class Heunn:
             })
 
             step = f"**Langkah {i + 1}:**\n\n"
+
             step += "$$\n\\begin{aligned}\n"
-            step += f"f({custom_round(xi)}) &= {fi} \\\\\n"
-            step += f"f({custom_round(xi + self.h)}) &= {fi_next} \\\\\n"
-            step += f"y_{{{i+1}}} &= {y_old} + \\frac{{{fi} + {fi_next}}}{{2}} \\cdot {self.h} = {y}\n"
+
+            step += (
+                f"f({custom_round(xi)}) "
+                f"&= {fi} \\\\\n"
+            )
+
+            step += (
+                f"f({xi_next}) "
+                f"&= {fi_next} \\\\\n"
+            )
+
+            step += (
+                f"y_{{{i+1}}} &= "
+                f"{y_old} + "
+                f"\\frac{{{fi} + {fi_next}}}{{2}}"
+                f"({self.h}) \\\\\n"
+            )
+
+            step += f"&= {y}\n"
+
             step += "\\end{aligned}\n$$\n\n"
+
+            if true_f is not None:
+                step += (
+                    f"Nilai sejati: "
+                    f"$y({xi_next}) = {true_val}$\n\n"
+                )
+
             steps.append(step)
 
-            xi = custom_round(xi + self.h)
+            xi = xi_next
 
-        if true_integral is not None:
-            steps.append(f"Nilai sejati (integrasi): ${custom_round(true_integral)}$")
-
-        return pd.DataFrame(rows), steps, custom_round(y), err
-
-
+        return (
+            pd.DataFrame(rows),
+            steps,
+            custom_round(y),
+            err
+        )
 class RungeKutta:
-    def __init__(self, df, a, b, h, a2):
+    def __init__(self, df, a, b, h, a2, y0):
         self.x = sp.symbols('x')
         self.df_expr = sp.sympify(df)
         self.a = a
         self.b = b
         self.h = h
         self.a2 = a2
+        self.y0 = y0
 
-    def evaluate(self, val):
-        return float(self.df_expr.subs(self.x, val))
+    def evaluate(self, expr, val):
+        return float(expr.subs(self.x, val))
 
     def solve(self):
         rows = []
@@ -2343,38 +2454,89 @@ class RungeKutta:
         err = None
 
         a1 = custom_round(1 - self.a2)
+
         p = custom_round(1 / (2 * self.a2))
+
         q = p
 
-        # True value from integration
+        # Exact solution
         try:
-            true_integral = float(sp.integrate(self.df_expr, (self.x, self.a, self.b)))
+            F = sp.integrate(self.df_expr)
+
+            C = self.y0 - F.subs(self.x, self.a)
+
+            true_f = F + C
+
         except Exception:
-            true_integral = None
+            true_f = None
 
         n_steps = int((self.b - self.a) / self.h)
-        y = 0.0
+
+        y = self.y0
+
         xi = self.a
 
         step_header = f"**Metode Runge-Kutta:**\n\n"
-        step_header += f"$a_2 = {self.a2}$, $a_1 = 1 - a_2 = {a1}$, $p = q = \\frac{{1}}{{2a_2}} = {p}$\n\n"
+
+        step_header += (
+            f"$a_2 = {self.a2}$, "
+            f"$a_1 = 1 - a_2 = {a1}$, "
+            f"$p = q = \\frac{{1}}{{2a_2}} = {p}$\n\n"
+        )
+
         steps.append(step_header)
 
+        rows.append({
+            "i": 0,
+            "x_i": custom_round(xi),
+            "k1": "",
+            "k2": "",
+            "y_i": custom_round(y),
+            "Et (%)": ""
+        })
+
         for i in range(n_steps):
-            k1 = custom_round(self.evaluate(xi))
-            k2 = custom_round(self.evaluate(xi + p * self.h))
+
+            k1 = custom_round(
+                self.evaluate(self.df_expr, xi)
+            )
+
+            k2 = custom_round(
+                self.evaluate(
+                    self.df_expr,
+                    xi + p * self.h
+                )
+            )
+
             y_old = custom_round(y)
-            y = custom_round(y + (a1 * k1 + self.a2 * k2) * self.h)
+
+            y = custom_round(
+                y + (
+                    a1 * k1 +
+                    self.a2 * k2
+                ) * self.h
+            )
+
+            xi_next = custom_round(xi + self.h)
 
             et_val = ""
-            if true_integral is not None and true_integral != 0:
-                et_val = custom_round(abs((true_integral - y) / true_integral) * 100)
-            elif true_integral is not None:
-                et_val = custom_round(abs(y) * 100)
+
+            if true_f is not None:
+
+                true_val = custom_round(
+                    self.evaluate(true_f, xi_next)
+                )
+
+                if true_val != 0:
+                    et_val = custom_round(
+                        abs((true_val - y) / true_val) * 100
+                    )
+                else:
+                    et_val = custom_round(abs(y) * 100)
 
             rows.append({
-                "i": i,
-                "x_i": custom_round(xi),
+                "i": i + 1,
+                "x_i": xi_next,
                 "k1": k1,
                 "k2": k2,
                 "y_i": y,
@@ -2382,16 +2544,51 @@ class RungeKutta:
             })
 
             step = f"**Langkah {i + 1}:**\n\n"
+
             step += "$$\n\\begin{aligned}\n"
-            step += f"k_1 &= f({custom_round(xi)}) = {k1} \\\\\n"
-            step += f"k_2 &= f({custom_round(xi)} + {p} \\cdot {self.h}) = f({custom_round(xi + p * self.h)}) = {k2} \\\\\n"
-            step += f"y_{{{i+1}}} &= {y_old} + ({a1} \\cdot {k1} + {self.a2} \\cdot {k2}) \\cdot {self.h} = {y}\n"
+
+            step += (
+                f"k_1 &= "
+                f"f({custom_round(xi)}) "
+                f"= {k1} \\\\\n"
+            )
+
+            step += (
+                f"k_2 &= "
+                f"f({custom_round(xi)} + "
+                f"{p} \\cdot {self.h}) \\\\\n"
+            )
+
+            step += (
+                f"&= f({custom_round(xi + p * self.h)}) "
+                f"= {k2} \\\\\n"
+            )
+
+            step += (
+                f"y_{{{i+1}}} &= "
+                f"{y_old} + "
+                f"({a1} \\cdot {k1} + "
+                f"{self.a2} \\cdot {k2})"
+                f"({self.h}) \\\\\n"
+            )
+
+            step += f"&= {y}\n"
+
             step += "\\end{aligned}\n$$\n\n"
+
+            if true_f is not None:
+                step += (
+                    f"Nilai sejati: "
+                    f"$y({xi_next}) = {true_val}$\n\n"
+                )
+
             steps.append(step)
 
-            xi = custom_round(xi + self.h)
+            xi = xi_next
 
-        if true_integral is not None:
-            steps.append(f"Nilai sejati (integrasi): ${custom_round(true_integral)}$")
-
-        return pd.DataFrame(rows), steps, custom_round(y), err
+        return (
+            pd.DataFrame(rows),
+            steps,
+            custom_round(y),
+            err
+        )
