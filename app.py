@@ -415,7 +415,10 @@ if st.button("Hitung"):
 
     # Tabel
     if df is not None:
-        render_section_header("📋", "Hasil Iterasi")
+        if kategori == "Interpolasi":
+            render_section_header("📋", "Tabel Beda")
+        else:
+            render_section_header("📋", "Hasil Iterasi")
         if isinstance(df, list):
             df = pd.DataFrame(df)
 
