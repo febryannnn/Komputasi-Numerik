@@ -612,102 +612,6 @@ class MNewtonRaphson:
         return pd.DataFrame(rows), steps, custom_round(x_old), err
 
 
-# class PolynomFactorization:
-#     def __init__(self, f: str, max_iter: int = 10) -> None:
-#         self.x = sp.symbols("x")
-#         self.f = sp.sympify(f)
-#         self.max_iter = max_iter
-
-#     @staticmethod
-#     def ABC(a: float = 1, b: float = 1, c: float = 1) -> tuple[float, float]:
-#         dis = b**2 - 4 * a * c
-#         if dis < 0:
-#             return np.nan, np.nan
-
-#         sq = np.sqrt(dis)
-#         x1 = ((-b) + sq) / (2 * a)
-#         x2 = ((-b) - sq) / (2 * a)
-#         return custom_round(x1), custom_round(x2)
-
-#     def _solve_deg3(self, coeff: list[int]):
-#         A2, A1, A0 = coeff
-
-#         rows = []
-#         b0 = 0
-#         a1 = A2
-#         a0 = A1
-
-#         for i in range(self.max_iter):
-#             b0 = custom_round(A0 / a0)
-#             a1 = custom_round(A2 - b0)
-#             a0 = custom_round(A1 - a1 * b0)
-#             rows.append({"Iterasi": i + 1, "b0": b0, "a1": a1, "a0": a0})
-
-#         x1 = -1 * b0
-#         x2, x3 = self.ABC(a=1, b=a1, c=a0)
-
-#         return rows, (x1, x2, x3)
-
-#     def _solve_deg4(self, coeff: list[int]):
-#         A3, A2, A1, A0 = coeff
-
-#         rows = []
-#         b1 = 0
-#         b0 = 0
-#         a1 = A3
-#         a0 = A2
-#         for i in range(self.max_iter):
-#             b0 = custom_round(A0 / a0)
-#             b1 = custom_round((A1 - a1 * b0) / a0)
-#             a1 = custom_round(A3 - b1)
-#             a0 = custom_round(A2 - b0 - a1 * b1)
-#             rows.append({"Iterasi": i + 1, "b0": b0, "b1": b1, "a1": a1, "a0": a0})
-
-#         x1, x2 = self.ABC(b=b1, c=b0)
-#         x3, x4 = self.ABC(b=a1, c=a0)
-#         return rows, (x1, x2, x3, x4)
-
-#     def _solve_deg5(self, coeff: list[int]):
-#         A4, A3, A2, A1, A0 = coeff
-
-#         rows = []
-#         a0 = 0
-#         b1 = 0
-#         b0 = 0
-#         c1 = A4
-#         c0 = A3
-#         for i in range(self.max_iter):
-#             b0 = custom_round((A1 - a0 * A2 + a0**2 * A3 - a0**3 * A4 + a0**4) / c0)
-#             b1 = custom_round((A2 - a0 * A3 + a0**2 * A4 - a0**3 + c1 * b0) / c0)
-#             a0 = custom_round(A0 / (b0 * c0))
-#             c1 = custom_round(A4 - a0 - b1)
-#             c0 = custom_round(A3 - a0 * A4 + a0**2 - b0 - c1 * b1)
-#             rows.append(
-#                 {"Iterasi": i + 1, "b0": b0, "b1": b1, "a0": a0, "c1": c1, "c0": c0}
-#             )
-
-#         x1 = -1 * a0
-#         x2, x3 = self.ABC(b=b1, c=b0)
-#         x4, x5 = self.ABC(b=c1, c=c0)
-#         return rows, (x1, x2, x3, x4, x5)
-
-#     def solve(self):
-#         degree = self.f.as_poly().degree()
-#         coeff = [int(self.f.coeff(self.x, i)) for i in range(degree, -1, -1)]
-#         err = None
-#         match degree:
-#             case 3:
-#                 rows, roots = self._solve_deg3(coeff)
-#             case 4:
-#                 rows, roots = self._solve_deg4(coeff)
-#             case 5:
-#                 rows, roots = self._solve_deg5(coeff)
-#             case _:
-#                 err = f"Derajat Polinomial {degree} tidak didukung pada program ini"
-
-#         return rows, roots, err
-
-
 class PolynomFactorization:
     def __init__(self, f: str, max_iter: int = 10) -> None:
         self.x = sp.symbols("x")
@@ -729,15 +633,14 @@ class PolynomFactorization:
         degree = poly.degree()
 
         coeff = [poly.coeff_monomial(self.x**i) for i in range(degree, -1, -1)]
-        coeff = [int(c) for c in coeff]
+        coeff = [c for c in coeff]
 
         if degree == 2:
             A2, A1, A0 = coeff
             x1, x2 = self.ABC(a=A2, b=A1, c=A0)
 
             rows = [{"Iterasi": 0, "Info": "Rumus ABC langsung"}]
-            steps = [
-                f"""
+            steps = [f"""
 **Langkah:**
 
 $$
@@ -746,12 +649,19 @@ x &= \\frac{{-b \\pm \\sqrt{{b^2 - 4ac}}}}{{2a}} \\\\
 a &= {A2}, \\quad b = {A1}, \\quad c = {A0}
 \\end{{aligned}}
 $$
-"""
-            ]
+"""]
             return rows, steps, (x1, x2), None
 
         elif degree == 3:
             A3, A2, A1, A0 = coeff
+
+            if A3 != 1:
+                return (
+                    None,
+                    None,
+                    None,
+                    f"**Error**: Koefisien pada derajat {degree} harus bernilai **1**",
+                )
 
             rows = []
             steps = []
@@ -761,18 +671,17 @@ $$
             a0 = A1
 
             rows.append({"Iterasi": 0, "b0": b0, "a1": a1, "a0": a0})
-            steps.append(
-                f"""
+            steps.append(f"""
 **Iterasi 0:**
 
 $$
 \\begin{{aligned}}
+b_0 &= 0 \\\\
 a_1 &= {A2} \\\\
 a_0 &= {A1}
 \\end{{aligned}}
 $$
-"""
-            )
+""")
 
             for i in range(1, self.max_iter):
                 a0_old = a0
@@ -782,19 +691,17 @@ $$
                 a0 = custom_round(A1 - a1 * b0)
 
                 rows.append({"Iterasi": i, "b0": b0, "a1": a1, "a0": a0})
-                steps.append(
-                    f"""
+                steps.append(f"""
 **Iterasi {i}:**
 
 $$
 \\begin{{aligned}}
 b_0 &= \\frac{{{A0}}}{{{a0_old}}} = {b0} \\\\
 a_1 &= {A2} - ({b0}) = {a1} \\\\
-a_0 &= {A1} - ({a1} \\cdot {b0}) = {a0}
+a_0 &= {A1} - ({a1} \\cdot ({b0})) = {a0}
 \\end{{aligned}}
 $$
-"""
-                )
+""")
 
             x1 = -1 * b0
             x2, x3 = self.ABC(b=a1, c=a0)
@@ -803,6 +710,14 @@ $$
 
         elif degree == 4:
             A4, A3, A2, A1, A0 = coeff
+
+            if A4 != 1:
+                return (
+                    None,
+                    None,
+                    None,
+                    f"**Error**: Koefisien pada derajat {degree} harus bernilai **1**",
+                )
 
             rows = []
             steps = []
@@ -813,18 +728,18 @@ $$
             a0 = A2
 
             rows.append({"Iterasi": 0, "b0": b0, "b1": b1, "a1": a1, "a0": a0})
-            steps.append(
-                f"""
+            steps.append(f"""
 **Iterasi 0:**
 
 $$
 \\begin{{aligned}}
+b_1 &= 0 \\\\
+b_0 &= 0 \\\\
 a_1 &= {A3} \\\\
 a_0 &= {A2}
 \\end{{aligned}}
 $$
-"""
-            )
+""")
 
             for i in range(1, self.max_iter):
                 a0_old = a0
@@ -835,20 +750,18 @@ $$
                 a0 = custom_round(A2 - b0 - a1 * b1)
 
                 rows.append({"Iterasi": i, "b0": b0, "b1": b1, "a1": a1, "a0": a0})
-                steps.append(
-                    f"""
+                steps.append(f"""
 **Iterasi {i}:**
 
 $$
 \\begin{{aligned}}
 b_0 &= \\frac{{{A0}}}{{{a0_old}}} = {b0} \\\\
-b_1 &= \\frac{{{A1} - ({a1} \\cdot {b0})}}{{{a0_old}}} = {b1} \\\\
-a_1 &= {A3} - {b1} = {a1} \\\\
-a_0 &= {A2} - {b0} - ({a1} \\cdot {b1}) = {a0}
+b_1 &= \\frac{{{A1} - ({a1} \\cdot ({b0}))}}{{{a0_old}}} = {b1} \\\\
+a_1 &= {A3} - ({b1}) = {a1} \\\\
+a_0 &= {A2} - ({b0}) - ({a1} \\cdot ({b1})) = {a0}
 \\end{{aligned}}
 $$
-"""
-                )
+""")
 
             x1, x2 = self.ABC(b=b1, c=b0)
             x3, x4 = self.ABC(b=a1, c=a0)
@@ -857,6 +770,14 @@ $$
 
         elif degree == 5:
             A5, A4, A3, A2, A1, A0 = coeff
+
+            if A5 != 1:
+                return (
+                    None,
+                    None,
+                    None,
+                    f"**Error**: Koefisien pada derajat {degree} harus bernilai **1**",
+                )
 
             rows = []
             steps = []
@@ -870,18 +791,19 @@ $$
             rows.append(
                 {"Iterasi": 0, "b0": b0, "b1": b1, "a0": a0, "c1": c1, "c0": c0}
             )
-            steps.append(
-                f"""
+            steps.append(f"""
 **Iterasi 0:**
 
 $$
 \\begin{{aligned}}
+b_1 &= 0 \\\\
+b_0 &= 0 \\\\
+a_0 &= 0 \\\\
 c_1 &= {A4} \\\\
 c_0 &= {A3}
 \\end{{aligned}}
 $$
-"""
-            )
+""")
 
             for i in range(1, self.max_iter):
                 c0_old = c0
@@ -899,8 +821,7 @@ $$
                 rows.append(
                     {"Iterasi": i, "b0": b0, "b1": b1, "a0": a0, "c1": c1, "c0": c0}
                 )
-                steps.append(
-                    f"""
+                steps.append(f"""
 **Iterasi {i}:**
 
 $$
@@ -912,8 +833,7 @@ c_1 &= {c1} \\\\
 c_0 &= {c0}
 \\end{{aligned}}
 $$
-"""
-                )
+""")
 
             x1 = -1 * a0
             x2, x3 = self.ABC(b=b1, c=b0)
@@ -928,7 +848,7 @@ $$
 class LinearRegression:
     def __init__(self, data, n=0, mode="std"):
         self.data = data
-        self.n = len(self.data) if n == 0 else n
+        self.n = len(data) if n == 0 else n
         self.mode = mode
 
     def solve(self):
@@ -949,22 +869,30 @@ class LinearRegression:
             case _:
                 return pd.DataFrame(), [], None, f"Mode '{self.mode}' tidak didukung"
 
+        print(x)
+        print(y)
+
         sum_x = custom_round(sum(x))
         sum_y = custom_round(sum(y))
+
         xy = [custom_round(x[i] * y[i]) for i in range(self.n)]
         sum_xy = custom_round(sum(xy))
+
         x2 = [custom_round(x[i] ** 2) for i in range(self.n)]
         sum_x2 = custom_round(sum(x2))
+
         avg_x = custom_round(sum_x / self.n)
         avg_y = custom_round(sum_y / self.n)
 
+        print(sum_x, sum_y, sum_xy, sum_x2, avg_x, avg_y)
+
         try:
-            a1 = custom_round(
-                (self.n * sum_xy - sum_x * sum_y) / (self.n * sum_x2 - sum_x**2)
-            )
+            a1 = (self.n * sum_xy - sum_x * sum_y) / (self.n * sum_x2 - sum_x**2)
         except (ZeroDivisionError, ValueError):
             return pd.DataFrame(), [], None, "Pembagian dengan nol saat menghitung a1"
         a0 = custom_round(avg_y - a1 * avg_x)
+
+        print(a1, a0)
 
         for i in range(self.n):
             rows.append(
@@ -1336,17 +1264,15 @@ class NewtonInterpolation:
                 self.data[i + 1][0] - self.data[i][0]
             )
 
+            diff_table[i][0] = custom_round(diff_table[i][0])
+
         for i in range(1, self.n - 1):
             for j in range(self.n - i - 1):
                 diff_table[j][i] = (diff_table[j + 1][i - 1] - diff_table[j][i - 1]) / (
                     self.data[j + i + 1][0] - self.data[j][0]
                 )
 
-        # Round the table
-        for i in range(self.n):
-            for j in range(self.n - 1):
-                if diff_table[i][j] != 0:
-                    diff_table[i][j] = custom_round(diff_table[i][j])
+                diff_table[j][i] = custom_round(diff_table[j][i])
 
         # Build rows
         for i in range(self.n):
@@ -1368,14 +1294,15 @@ class NewtonInterpolation:
 
         res = self.data[0][1]
         step2 = f"**Evaluasi polinomial di $x = {self.x}$:**\n\n"
-        step2 += "$$\n\\begin{aligned}\n"
-        step2 += f"P({self.x}) \\; =& \\quad {custom_round(self.data[0][1])} \\\\\n"
+        step2 += "$$\n\\begin{alignat}{2}\n"
+        step2 += (
+            f"P({self.x}) & = && \\; {custom_round(self.data[0][1])} \\nonumber \\\\\n"
+        )
         for i in range(0, self.n - 1):
             terms = " \\cdot ".join(
                 [f"({self.x} - {self.data[j][0]})" for j in range(i + 1)]
             )
-            step2 += f"& + {custom_round(diff_table[0][i])} \\cdot {terms} \\\\\n"
-        step2 += " \\\\\n"
+            step2 += f"& && + \\; {custom_round(diff_table[0][i])} \\cdot {terms}  \\nonumber \\\\[0.5em]\n"
 
         # Compute result
         res = self.data[0][1]
@@ -1386,8 +1313,8 @@ class NewtonInterpolation:
             res += term
         res = custom_round(res)
 
-        step2 += f"=& \\; {res}\n"
-        step2 += "\\end{aligned}\n$$\n\n"
+        step2 += f"& = && \\; {res} \\nonumber\n"
+        step2 += "\\end{alignat}\n$$\n\n"
         steps.append(step2)
 
         return pd.DataFrame(rows), steps, res, err
@@ -1400,14 +1327,14 @@ class LagrangeInterpolation:
         self.x = x
 
     def solve(self):
-        rows = []
         steps = []
         err = None
 
         res = 0.0
+        terms = []
         step = f"**Interpolasi Lagrange di $x = {self.x}$:**\n\n"
-        step += "$$\n\\begin{aligned}\n"
-
+        step += "$$\n\\begin{alignat}{2}\n"
+        step += f"P({self.x}) & = && \\; "
         for i in range(self.n):
             li = self.data[i][1]
             num_parts = []
@@ -1417,33 +1344,33 @@ class LagrangeInterpolation:
                     li *= (self.x - self.data[j][0]) / (
                         self.data[i][0] - self.data[j][0]
                     )
-                    num_parts.append(f"({self.x} - {self.data[j][0]})")
-                    den_parts.append(f"({self.data[i][0]} - {self.data[j][0]})")
+                    num_parts.append(
+                        f"({self.x} {'-' if self.data[j][0] >= 0 else '+'} {abs(self.data[j][0])})"
+                    )
+                    den_parts.append(
+                        f"({self.data[i][0]} {'-' if self.data[j][0] >= 0 else '+'} {abs(self.data[j][0])})"
+                    )
             li = custom_round(li)
+            terms.append(li)
             res += li
-
-            rows.append(
-                {
-                    "i": i,
-                    "x_i": self.data[i][0],
-                    "y_i": self.data[i][1],
-                    "L_i * y_i": li,
-                }
-            )
 
             num_str = " \\cdot ".join(num_parts)
             den_str = " \\cdot ".join(den_parts)
-            step += f"L_{{{i}}} \\cdot y_{{{i}}} &= {self.data[i][1]} \\cdot \\frac{{{num_str}}}{{{den_str}}} = {li}"
-            if i < self.n - 1:
-                step += " \\\\[1em]\n"
+            if i == 0:
+                step += f"({self.data[i][1]}) \\cdot \\frac{{{num_str}}}{{{den_str}}}"
+            else:
+                step += f"& && \\; + ({self.data[i][1]}) \\cdot \\frac{{{num_str}}}{{{den_str}}}"
+
+            step += "\\nonumber \\\\[1.5em]\n"
 
         res = custom_round(res)
-        step += "\\end{aligned}\n$$\n\n"
+        step += f"& = && \\; {res} \\nonumber"
+        step += "\\end{alignat}\n$$\n\n"
 
         step += "$$\n\\begin{aligned}\n"
-        step += f"P({self.x}) &= " + " + ".join(
-            [f"L_{{{i}}} \\cdot y_{{{i}}}" for i in range(self.n)]
-        )
+        step += f"P({self.x}) &= " + " ".join(
+            f"{sign(terms[i])} {terms[i]}" for i in range(self.n)
+        ).lstrip("+ ")
         step += f" \\\\\n&= {res}\n"
         step += "\n\\end{aligned}\n$$\n\n"
 
@@ -1510,15 +1437,19 @@ class NewtonGregoryInterpolation:
             row = {"x": self.data[i][0], "y": self.data[i][1]}
             for j in range(self.n - 1):
                 col_label = f"Δ{j+1}y"
-                row[col_label] = table[i][j] if table[i][j] != 0 else ""
+                row[col_label] = table[i][j] if table[i][j] != 0 else np.nan
             rows.append(row)
 
         step = f"**Newton-Gregory ({self.mode}):**\n\n"
-        step += f"$h = {custom_round(h)}$, $s = \\frac{{{self.x} - {self.data[idx][0]}}}{{{custom_round(h)}}} = {custom_round(s)}$\n\n"
+        step += "$$\n\\begin{aligned}\n"
+        step += f"h &= {custom_round(h)} \\\\[1em]\n"
+        step += f"s &= \\frac{{{self.x} - {self.data[idx][0]}}}{{{custom_round(h)}}} = {custom_round(s)}\n"
+        step += "\\end{aligned}\n$$\n\n"
         steps.append(step)
 
         match self.mode:
             case "forward":
+                term_temp = []
                 res = self.data[idx][1]
                 max_terms = self.n - 1 - idx
                 num_terms = (
@@ -1526,34 +1457,44 @@ class NewtonGregoryInterpolation:
                     if self.orde != -1 and self.orde < max_terms
                     else max_terms
                 )
-                step2 = "$$\n\\begin{aligned}\n"
-                step2 += f"P({self.x}) &= {custom_round(self.data[idx][1])}"
+                step2 = "$$\n\\begin{alignat}{2}\n"
+                step2 += f"P({self.x}) & = && \\; {custom_round(self.data[idx][1])} \\nonumber \\\\[0.5em]\n"
                 for i in range(num_terms):
                     k = i + 1
                     temp = 1
                     for j in range(k):
                         temp *= s - j
                     term_val = custom_round(temp * table[idx][i] / self.factorial(k))
+                    term_temp.append(term_val)
                     res = custom_round(res + term_val)
                     s_parts = " \\cdot ".join(
                         [
                             (
                                 f"({custom_round(s)} - {j})"
                                 if j > 0
-                                else f"{custom_round(s)}"
+                                else f"({custom_round(s)})"
                             )
                             for j in range(k)
                         ]
                     )
-                    step2 += f" + \\frac{{{s_parts} \\cdot {custom_round(table[idx][i])}}}{{{k}!}}"
-                step2 += f" \\\\\n&= {custom_round(res)}\n"
-                step2 += "\\end{aligned}\n$$\n\n"
+                    step2 += f"& && \\; + \\frac{{{s_parts}}}{{{k}!}} \\; ({custom_round(table[idx][i])}) \\nonumber {f"\\\\[0.5em]" if i < num_terms - 1 else ''}\n"
+                step2 += "\\end{alignat}\n$$\n\n"
+
+                step2 += "$$\n\\begin{aligned}\n"
+                step2 += f"P({self.x}) &= {self.data[idx][1]} {sign(term_temp[0]) if len(term_temp) > 0 else ''}" + " ".join(
+                    f"{sign(term_temp[i])} {term_temp[i]}" for i in range(num_terms)
+                ).lstrip(
+                    "+ "
+                )
+                step2 += f" \\\\\n&= {res}\n"
+                step2 += "\n\\end{aligned}\n$$\n\n"
                 steps.append(step2)
 
             case "backward":
+                term_temp = []
                 res = self.data[idx][1]
-                step2 = "$$\n\\begin{aligned}\n"
-                step2 += f"P({self.x}) &= {custom_round(self.data[idx][1])}"
+                step2 = "$$\n\\begin{alignat}{2}\n"
+                step2 += f"P({self.x}) & = && \\; {custom_round(self.data[idx][1])} \\nonumber \\\\[1em]\n"
                 j = 0
                 for i in range(idx - 1, -1, -1):
                     if self.orde != -1 and j >= self.orde:
@@ -1563,21 +1504,31 @@ class NewtonGregoryInterpolation:
                     for mm in range(k):
                         temp *= s + mm
                     term_val = custom_round(temp * table[i][j] / self.factorial(k))
+                    term_temp.append(term_val)
                     res = custom_round(res + term_val)
                     s_parts = " \\cdot ".join(
                         [
                             (
                                 f"({custom_round(s)} + {mm})"
                                 if mm > 0
-                                else f"{custom_round(s)}"
+                                else f"({custom_round(s)})"
                             )
                             for mm in range(k)
                         ]
                     )
-                    step2 += f" + \\frac{{{s_parts} \\cdot {custom_round(table[i][j])}}}{{{k}!}}"
+                    step2 += f"& && + \\; \\frac{{{s_parts}}}{{{k}!}} \\; ({custom_round(table[i][j])}) \\nonumber {f"\\\\[0.5em]" if i > 0 else ''}\n"
                     j += 1
-                step2 += f" \\\\\n&= {custom_round(res)}\n"
-                step2 += "\\end{aligned}\n$$\n\n"
+                step2 += "\\end{alignat}\n$$\n\n"
+
+                step2 += "$$\n\\begin{aligned}\n"
+                step2 += f"P({self.x}) &= {self.data[idx][1]} {sign(term_temp[0]) if len(term_temp) > 0 else ''}" + " ".join(
+                    f"{sign(term_temp[i])} {term_temp[i]}"
+                    for i in range(len(term_temp))
+                ).lstrip(
+                    "+ "
+                )
+                step2 += f" \\\\\n&= {res}\n"
+                step2 += "\n\\end{aligned}\n$$\n\n"
                 steps.append(step2)
 
         return pd.DataFrame(rows), steps, custom_round(res), err
@@ -1613,8 +1564,8 @@ class StirlingInterpolation:
         if idx == -1:
             return pd.DataFrame(), [], None, "x0 tidak ada dalam data"
 
-        h = self.data[1][0] - self.data[0][0]
-        s = (self.x - self.data[idx][0]) / h
+        h = custom_round(self.data[1][0] - self.data[0][0])
+        s = custom_round(((self.x - self.data[idx][0]) / h))
 
         for i in range(self.n - 1):
             table[i][0] = self.data[i + 1][1] - self.data[i][1]
@@ -1632,18 +1583,22 @@ class StirlingInterpolation:
             row = {"x": self.data[i][0], "y": self.data[i][1]}
             for j in range(self.n - 1):
                 col_label = f"Δ{j+1}y"
-                row[col_label] = table[i][j] if table[i][j] != 0 else ""
+                row[col_label] = table[i][j] if table[i][j] != 0 else np.nan
             rows.append(row)
 
         step = f"**Interpolasi Stirling:**\n\n"
-        step += f"$h = {custom_round(h)}$, $s = \\frac{{{self.x} - {self.data[idx][0]}}}{{{custom_round(h)}}} = {custom_round(s)}$\n\n"
+        step += "$$\n\\begin{aligned}\n"
+        step += f"h &= {custom_round(h)} \\\\[1em]\n"
+        step += f"s &= \\frac{{{self.x} - {self.data[idx][0]}}}{{{h}}} = {s}\n"
+        step += "\\end{aligned}\n$$\n\n"
         steps.append(step)
 
         res = self.data[idx][1]
-        step2 = "$$\n\\begin{aligned}\n"
-        step2 += f"P({self.x}) &= {custom_round(self.data[idx][1])}"
+        step2 = "$$\n\\begin{alignat}{2}\n"
+        step2 += f"P({self.x}) & = && \\; {custom_round(self.data[idx][1])} \\nonumber \\\\[0.5em]\n"
 
         max_orde = self.orde if self.orde != -1 else self.n - 1
+        term_temp = [self.data[idx][1]]
         k = 1
         while k <= max_orde:
             if k % 2 == 1:
@@ -1658,13 +1613,17 @@ class StirlingInterpolation:
                     (table[fwd_idx][k - 1] + table[bwd_idx][k - 1]) / 2
                 )
                 # Product: s * (s^2 - 1^2) * (s^2 - 2^2) * ... for odd k
+                num_parts = [f"({s})"]
                 temp = s
                 for j in range(1, (k + 1) // 2):
                     temp *= s**2 - j**2
+                    num_parts.append(f"(({s})^2 - {j**2})")
                 temp = custom_round(temp)
                 term_val = custom_round(temp * avg_diff / self.factorial(k))
+                term_temp.append(term_val)
                 res = custom_round(res + term_val)
-                step2 += f" + \\frac{{{temp} \\cdot {avg_diff}}}{{{k}!}}"
+                num_str = " ".join(num_parts)
+                step2 += f"& && \\; + \\frac{{{num_str}}}{{{k}!}} \\; ({avg_diff}) \\nonumber \\\\[0.5em]\n"
             else:
                 # Even order: central difference
                 c_idx = idx - k // 2
@@ -1672,18 +1631,27 @@ class StirlingInterpolation:
                     break
                 diff_val = table[c_idx][k - 1]
                 # Product: s^2 * (s^2 - 1^2) * ... * (s^2 - ((k/2)-1)^2)
+                num_parts = [f"({s})^2"]
                 temp = s**2
                 for j in range(1, k // 2):
                     temp *= s**2 - j**2
+                    num_parts.append(f"(({s})^2 - {j**2})")
                 temp = custom_round(temp)
                 term_val = custom_round(temp * diff_val / self.factorial(k))
+                term_temp.append(term_val)
                 res = custom_round(res + term_val)
-                step2 += f" + \\frac{{{temp} \\cdot {custom_round(diff_val)}}}{{{k}!}}"
+                num_str = " ".join(num_parts)
+                step2 += f"& && \\; + \\frac{{{num_str}}}{{{k}!}} \\; ({custom_round(diff_val)}) \\nonumber \\\\[0.5em]\n"
             k += 1
 
-        res = custom_round(res)
-        step2 += f" \\\\\n&= {res}\n"
-        step2 += "\\end{aligned}\n$$\n\n"
+        step2 += "\\end{alignat}\n$$\n\n"
+
+        step2 += "$$\n\\begin{aligned}\n"
+        step2 += f"P({self.x}) &= " + " ".join(
+            f"{sign(term_temp[i])} {term_temp[i]}" for i in range(len(term_temp))
+        ).lstrip("+ ")
+        step2 += f" \\\\\n&= {custom_round(res)}\n"
+        step2 += "\n\\end{aligned}\n$$\n\n"
         steps.append(step2)
 
         return pd.DataFrame(rows), steps, res, err
@@ -1714,7 +1682,8 @@ class BesselInterpolation:
         steps = []
         err = None
 
-        table = [[0 for _ in range(self.n - 1)] for _ in range(self.n)]
+        table = [[0.0 for _ in range(self.n)] for _ in range(self.n)]
+
         idx = self.search_x0()
         if idx == -1:
             return pd.DataFrame(), [], None, "x0 tidak ada dalam data"
@@ -1726,84 +1695,83 @@ class BesselInterpolation:
                 "x0 harus bukan titik terakhir untuk Bessel",
             )
 
-        h = self.data[1][0] - self.data[0][0]
-        s = (self.x - self.data[idx][0]) / h
-        u = s - 0.5
-
-        for i in range(self.n - 1):
-            table[i][0] = self.data[i + 1][1] - self.data[i][1]
-
-        for i in range(1, self.n - 1):
-            for j in range(self.n - i - 1):
-                table[j][i] = table[j + 1][i - 1] - table[j][i - 1]
+        h = custom_round(self.data[1][0] - self.data[0][0])
+        s = custom_round(((self.x - self.data[idx][0]) / h))
+        u = custom_round(s - 0.5)
 
         for i in range(self.n):
-            for j in range(self.n - 1):
+            table[i][0] = self.data[i][1]
+
+        for j in range(1, self.n):
+            for i in range(self.n - j):
+                table[i][j] = table[i + 1][j - 1] - table[i][j - 1]
+
+        for i in range(self.n):
+            for j in range(self.n):
                 if table[i][j] != 0:
                     table[i][j] = custom_round(table[i][j])
 
         for i in range(self.n):
             row = {"x": self.data[i][0], "y": self.data[i][1]}
-            for j in range(self.n - 1):
+            for j in range(1, self.n - i):
                 col_label = f"Δ{j+1}y"
-                row[col_label] = table[i][j] if table[i][j] != 0 else ""
+                row[col_label] = table[i][j] if table[i][j] != 0 else np.nan
             rows.append(row)
 
         step = f"**Interpolasi Bessel:**\n\n"
-        step += f"$h = {custom_round(h)}$, $s = {custom_round(s)}$, $u = s - 0.5 = {custom_round(u)}$\n\n"
+        step += "$$\n\\begin{aligned}\n"
+        step += f"h &= {custom_round(h)} \\\\[1em]\n"
+        step += f"s &= \\frac{{{self.x} - {self.data[idx][0]}}}{{{h}}} = {s}\\\\[1em]\n"
+        step += f"u &= s - \\frac{{1}}{{2}} = {u}\n"
+        step += "\\end{aligned}\n$$\n\n"
         steps.append(step)
 
-        # Bessel starts with average of f[idx] and f[idx+1]
-        res = custom_round((self.data[idx][1] + self.data[idx + 1][1]) / 2)
-        step2 = "$$\n\\begin{aligned}\n"
-        step2 += f"P({self.x}) &= \\frac{{f_0 + f_1}}{{2}}"
+        res = custom_round((table[idx][0] + table[idx + 1][0]) / 2)
+        step2 = "$$\n\\begin{alignat}{2}\n"
+        step2 += f"P({self.x}) & = && \\; {res} \\nonumber \\\\[0.5em]\n"
 
-        max_orde = self.orde if self.orde != -1 else self.n - 1
-        k = 1
-        while k <= max_orde:
-            if k % 2 == 1:
-                # Odd order: u * product * diff / k!
-                if k - 1 >= self.n - 1:
+        curr_idx = idx
+        term_temp = [res]
+
+        for term in range(1, self.orde + 1 if self.orde != -1 else self.n):
+            num_parts = []
+            if term % 2 == 1:
+                if curr_idx < 0 or curr_idx >= self.n - term:
                     break
-                if k == 1:
-                    diff_val = table[idx][0]
-                else:
-                    c1 = idx - k // 2
-                    c2 = c1 - 1
-                    if c1 < 0 or c2 < 0 or k - 1 >= self.n - 1:
-                        break
-                    diff_val = custom_round((table[c2][k - 1] + table[c1][k - 1]) / 2)
-                if k == 1:
-                    temp = u
-                else:
-                    temp = u
-                    for j in range(1, (k + 1) // 2):
-                        temp *= u**2 - (j - 0.5) ** 2
-                temp = custom_round(temp)
-                term_val = custom_round(temp * diff_val / self.factorial(k))
-                res = custom_round(res + term_val)
-                step2 += f" + \\frac{{{temp} \\cdot {custom_round(diff_val)}}}{{{k}!}}"
+
+                diff_val = table[curr_idx][term]
+                coef = u
+                num_parts.append(f"({u})")
+                for k in range(1, (term // 2) + 1):
+                    coef *= u**2 - ((2 * k - 1) ** 2) / 4
+                    num_parts.append(f"(({u})^2 - \\frac{{{(2 * k - 1)**2}}}{{4}})")
+
+                curr_idx -= 1
+
             else:
-                # Even order: average of two central differences * product / k!
-                c_idx = idx - k // 2
-                c_idx2 = c_idx + 1
-                if c_idx < 0 or c_idx2 >= self.n or k - 1 >= self.n - 1:
+                if curr_idx + 1 < 0 or curr_idx + 1 >= self.n - term:
                     break
-                avg_diff = custom_round(
-                    (table[c_idx][k - 1] + table[c_idx2][k - 1]) / 2
-                )
-                temp = 1.0
-                for j in range(k // 2):
-                    temp *= u**2 - j**2
-                temp = custom_round(temp)
-                term_val = custom_round(temp * avg_diff / self.factorial(k))
-                res = custom_round(res + term_val)
-                step2 += f" + \\frac{{{temp} \\cdot {custom_round(avg_diff)}}}{{{k}!}}"
-            k += 1
 
-        res = custom_round(res)
-        step2 += f" \\\\\n&= {res}\n"
-        step2 += "\\end{aligned}\n$$\n\n"
+                diff_val = (table[curr_idx][term] + table[curr_idx + 1][term]) / 2
+                coef = 1
+                for k in range(1, (term // 2) + 1):
+                    coef *= u**2 - ((2 * k - 1) ** 2) / 4
+                    num_parts.append(f"(({u})^2 - \\frac{{{(2 * k - 1)**2}}}{{4}})")
+
+            term_value = custom_round((coef * diff_val) / self.factorial(term))
+            term_temp.append(term_value)
+            res += term_value
+            num_str = " ".join(num_parts)
+            step2 += f"& && \\; + \\frac{{{num_str}}}{{{term}!}} \\; ({diff_val}) \\nonumber \\\\[0.5em]\n"
+
+        step2 += "\\end{alignat}\n$$\n\n"
+
+        step2 += "$$\n\\begin{aligned}\n"
+        step2 += f"P({self.x}) &= " + " ".join(
+            f"{sign(term_temp[i])} {term_temp[i]}" for i in range(len(term_temp))
+        ).lstrip("+ ")
+        step2 += f" \\\\\n&= {custom_round(res)}\n"
+        step2 += "\n\\end{aligned}\n$$\n\n"
         steps.append(step2)
 
         return pd.DataFrame(rows), steps, res, err
@@ -1899,7 +1867,10 @@ class NewtonGregoryDifferentiation:
             rows.append(row)
 
         step = f"**Diferensiasi Newton-Gregory ({self.mode}):**\n\n"
-        step += f"$h = {custom_round(h)}$, $s = {custom_round(s)}$\n\n"
+        step += "$$\n\\begin{aligned}\n"
+        step += f"h &= {custom_round(h)} \\\\[1em]\n"
+        step += f"s &= \\frac{{{self.x} - {self.data[idx][0]}}}{{{custom_round(h)}}} = {custom_round(s)}\n"
+        step += "\\end{aligned}\n$$\n\n"
         steps.append(step)
 
         res_deriv_x = 0
