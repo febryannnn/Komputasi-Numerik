@@ -1774,7 +1774,7 @@ class BesselInterpolation:
         step2 += "\n\\end{aligned}\n$$\n\n"
         steps.append(step2)
 
-        return pd.DataFrame(rows), steps, res, err
+        return pd.DataFrame(rows), steps, custom_round(res), err
 
 
 class NewtonGregoryDifferentiation:
@@ -1804,36 +1804,6 @@ class NewtonGregoryDifferentiation:
                 r = mid - 1
         return -1
 
-    def _product_derivative(self, s, k):
-        """Derivative of product (s)(s-1)(s-2)...(s-(k-1)) w.r.t. s."""
-        if k == 0:
-            return 0
-        if k == 1:
-            return 1
-        total = 0
-        for i in range(k):
-            prod = 1
-            for j in range(k):
-                if j != i:
-                    prod *= s - j
-            total += prod
-        return total
-
-    def _product_derivative_backward(self, s, k):
-        """Derivative of product (s)(s+1)(s+2)...(s+(k-1)) w.r.t. s."""
-        if k == 0:
-            return 0
-        if k == 1:
-            return 1
-        total = 0
-        for i in range(k):
-            prod = 1
-            for j in range(k):
-                if j != i:
-                    prod *= s + j
-            total += prod
-        return total
-
     def solve(self):
         rows = []
         steps = []
@@ -1844,8 +1814,8 @@ class NewtonGregoryDifferentiation:
         if idx == -1:
             return pd.DataFrame(), [], None, "x0 tidak ada dalam data"
 
-        h = self.data[1][0] - self.data[0][0]
-        s = (self.x - self.data[idx][0]) / h
+        h = custom_round(self.data[1][0] - self.data[0][0])
+        s = custom_round((self.x - self.data[idx][0]) / h)
 
         for i in range(self.n - 1):
             table[i][0] = self.data[i + 1][1] - self.data[i][1]
@@ -1863,21 +1833,20 @@ class NewtonGregoryDifferentiation:
             row = {"x": self.data[i][0], "y": self.data[i][1]}
             for j in range(self.n - 1):
                 col_label = f"Δ{j+1}y"
-                row[col_label] = table[i][j] if table[i][j] != 0 else ""
+                row[col_label] = table[i][j] if table[i][j] != 0 else np.nan
             rows.append(row)
 
         step = f"**Diferensiasi Newton-Gregory ({self.mode}):**\n\n"
         step += "$$\n\\begin{aligned}\n"
-        step += f"h &= {custom_round(h)} \\\\[1em]\n"
-        step += f"s &= \\frac{{{self.x} - {self.data[idx][0]}}}{{{custom_round(h)}}} = {custom_round(s)}\n"
+        step += f"h &= {h} \\\\[1em]\n"
+        step += f"s &= \\frac{{{self.x} - {self.data[idx][0]}}}{{{h}}} = {s}\n"
         step += "\\end{aligned}\n$$\n\n"
         steps.append(step)
 
         res_deriv_x = 0
-
+        s_sym = sp.symbols("s")
         match self.mode:
             case "forward":
-                res_deriv_s = 0
                 max_terms = self.n - 1 - idx
                 num_terms = (
                     self.orde
@@ -1885,42 +1854,155 @@ class NewtonGregoryDifferentiation:
                     else max_terms
                 )
 
-                step2 = "$$\n\\begin{aligned}\n"
-                step2 += f"P'({self.x}) &= \\frac{{1}}{{h}} \\sum \\frac{{\\Delta^k y_0}}{{k!}} \\cdot \\frac{{d}}{{ds}} \\prod_{{j=0}}^{{k-1}} (s - j) \\\\\n"
+                latex_formula_terms = []
+                latex_numeric_terms = []
+                term_values = []
 
-                for i in range(num_terms):
-                    k = i + 1
-                    deriv_prod = self._product_derivative(s, k)
-                    term_val = custom_round(
-                        deriv_prod * table[idx][i] / self.factorial(k)
+                for k in range(1, num_terms + 1):
+                    diff_val = table[idx][k - 1]
+
+                    prod = 1
+                    for j in range(k):
+                        prod *= s_sym - j
+
+                    poly_deriv = sp.diff(prod, s_sym)
+                    poly_deriv_expanded = sp.expand(poly_deriv)
+
+                    # 3. Evaluate the derivative numerically at s
+                    poly_deriv_val = float(poly_deriv_expanded.subs(s_sym, s))
+
+                    # 4. Calculate total value for this term
+                    fact_k = self.factorial(k)
+                    term_val = custom_round((poly_deriv_val / fact_k) * diff_val)
+                    term_values.append(term_val)
+
+                    formula_poly_latex = sp.latex(poly_deriv_expanded)
+                    numeric_poly_latex = sp.latex(
+                        poly_deriv_expanded.subs(s_sym, sp.Symbol(f"({s})"))
                     )
-                    res_deriv_s = custom_round(res_deriv_s + term_val)
 
+                    if k == 1:
+                        latex_formula_terms.append(f"{custom_round(diff_val)}")
+                        latex_numeric_terms.append(f"{custom_round(diff_val)}")
+                    else:
+                        latex_formula_terms.append(
+                            f"\\frac{{{formula_poly_latex}}}{{{k}!}} ({custom_round(diff_val)})"
+                        )
+                        latex_numeric_terms.append(
+                            f"\\frac{{{numeric_poly_latex}}}{{{k}!}} ({custom_round(diff_val)})"
+                        )
+
+                step2 = "$$\n\\begin{alignat*}{2}\n"
+                if len(latex_numeric_terms) == 1:
+                    step2 += f"P'({self.x}) &= \\frac{{1}}{{{h}}} \\; \\Biggl[ \\; && {latex_numeric_terms[0]} \\Biggr] \\\\[1em]\n"
+                elif len(latex_numeric_terms) == 2:
+                    step2 += f"P'({self.x}) &= \\frac{{1}}{{{h}}} \\; \\Biggl[ \\; && {latex_numeric_terms[0]} + {latex_numeric_terms[1]} \\Biggr] \\\\[1em]\n"
+                else:
+                    step2 += f"P'({self.x}) &= \\frac{{1}}{{{h}}} \\; \\Biggl[ \\; && {latex_numeric_terms[0]} + {latex_numeric_terms[1]} \\; + \\\\\n"
+                    for i in range(2, len(latex_numeric_terms) - 1):
+                        step2 += f"& && {latex_numeric_terms[i]} \\; + \\\\\n"
+                    step2 += f"& && {latex_numeric_terms[-1]} \\; \\Biggr] \\\\[1em]\n"
+
+                term_str_list = []
+                for val in term_values:
+                    if val >= 0:
+                        term_str_list.append(f"+ {val}")
+                    else:
+                        term_str_list.append(f"- {abs(val)}")
+                terms_joined = " ".join(term_str_list).lstrip("+ ")
+
+                res_deriv_s = sum(term_values)
                 res_deriv_x = custom_round(res_deriv_s / h)
-                step2 += f"&= \\frac{{1}}{{{custom_round(h)}}} \\cdot {custom_round(res_deriv_s)} = {res_deriv_x}\n"
-                step2 += "\\end{aligned}\n$$\n\n"
+                step2 += "\\end{alignat*}\n$$\n"
+
+                step2 += "$$\n\\begin{aligned}\n"
+                step2 += f"P'({self.x}) &= \\frac{{1}}{{{h}}} \\; \\left[ {terms_joined} \\right] = {res_deriv_x} \\\\[1em]\n"
+                step2 += "\n\\end{aligned}\n$$\n\n"
+
                 steps.append(step2)
 
             case "backward":
-                res_deriv_s = 0
-                step2 = "$$\n\\begin{aligned}\n"
-                step2 += f"P'({self.x}) &= \\frac{{1}}{{h}} \\sum \\frac{{\\Delta^k y}}{{k!}} \\cdot \\frac{{d}}{{ds}} \\prod_{{j=0}}^{{k-1}} (s + j) \\\\\n"
+                max_terms = idx
+                num_terms = (
+                    self.orde
+                    if self.orde != -1 and self.orde < max_terms
+                    else max_terms
+                )
 
-                j = 0
-                for i in range(idx - 1, -1, -1):
-                    if self.orde != -1 and j >= self.orde:
-                        break
-                    k = j + 1
-                    deriv_prod = self._product_derivative_backward(s, k)
-                    term_val = custom_round(
-                        deriv_prod * table[i][j] / self.factorial(k)
+                if num_terms <= 0:
+                    return (
+                        pd.DataFrame(),
+                        [],
+                        None,
+                        "Data tidak cukup untuk mode backward pada x0 tersebut",
                     )
-                    res_deriv_s = custom_round(res_deriv_s + term_val)
-                    j += 1
 
+                latex_formula_terms = []
+                latex_numeric_terms = []
+                term_values = []
+
+                for k in range(1, num_terms + 1):
+                    diff_val = table[idx - k][k - 1]
+
+                    prod = 1
+                    for j in range(k):
+                        prod *= s_sym + j
+
+                    poly_deriv = sp.diff(prod, s_sym)
+                    poly_deriv_expanded = sp.expand(poly_deriv)
+
+                    poly_deriv_val = float(poly_deriv_expanded.subs(s_sym, s))
+
+                    fact_k = self.factorial(k)
+                    term_val = custom_round((poly_deriv_val / fact_k) * diff_val)
+                    term_values.append(term_val)
+
+                    formula_poly_latex = sp.latex(poly_deriv_expanded)
+                    numeric_poly_latex = sp.latex(
+                        poly_deriv_expanded.subs(s_sym, sp.Symbol(f"({s})"))
+                    )
+
+                    if k == 1:
+                        latex_formula_terms.append(f"{custom_round(diff_val)}")
+                        latex_numeric_terms.append(f"{custom_round(diff_val)}")
+                    else:
+                        latex_formula_terms.append(
+                            f"\\frac{{{formula_poly_latex}}}{{{k}!}} ({custom_round(diff_val)})"
+                        )
+                        latex_numeric_terms.append(
+                            f"\\frac{{{numeric_poly_latex}}}{{{k}!}} ({custom_round(diff_val)})"
+                        )
+
+                step2 = "$$\n\\begin{alignat*}{2}\n"
+
+                if len(latex_numeric_terms) == 1:
+                    step2 += f"P'({self.x}) &= \\frac{{1}}{{{h}}} \\; \\Biggl[ \\; && {latex_numeric_terms[0]} \\; \\Biggr] \\\\[1em]\n"
+                elif len(latex_numeric_terms) == 2:
+                    step2 += f"P'({self.x}) &= \\frac{{1}}{{{h}}} \\; \\Biggl[ \\; && {latex_numeric_terms[0]} + {latex_numeric_terms[1]} \\; \\Biggr] \\\\[1em]\n"
+                else:
+                    # Matches your target layout exactly
+                    step2 += f"P'({self.x}) &= \\frac{{1}}{{{h}}} \\; \\Biggl[ \\; && {latex_numeric_terms[0]} + {latex_numeric_terms[1]} + \\\\\n"
+                    for i in range(2, len(latex_numeric_terms) - 1):
+                        step2 += f"& && {latex_numeric_terms[i]} + \\\\\n"
+                    step2 += f"& && {latex_numeric_terms[-1]} \\;  \\Biggr] \\\\[1em]\n"
+
+                # --- Step 2c & 2d: Final Simplification and Resolution ---
+                term_str_list = []
+                for val in term_values:
+                    if val >= 0:
+                        term_str_list.append(f"+ {val}")
+                    else:
+                        term_str_list.append(f"- {abs(val)}")
+                terms_joined = " ".join(term_str_list).lstrip("+ ")
+
+                res_deriv_s = sum(term_values)
                 res_deriv_x = custom_round(res_deriv_s / h)
-                step2 += f"&= \\frac{{1}}{{{custom_round(h)}}} \\cdot {custom_round(res_deriv_s)} = {res_deriv_x}\n"
-                step2 += "\\end{aligned}\n$$\n\n"
+                step2 += "\\end{alignat*}\n$$\n"
+
+                step2 += "$$\n\\begin{aligned}\n"
+                step2 += f"P'({self.x}) &= \\frac{{1}}{{{h}}} \\; \\left[ {terms_joined} \\right] = {res_deriv_x} \\\\[1em]\n"
+                step2 += "\n\\end{aligned}\n$$\n\n"
+
                 steps.append(step2)
 
         return pd.DataFrame(rows), steps, custom_round(res_deriv_x), err
@@ -2338,7 +2420,7 @@ class GaussIntegration:
 
 class Euler:
     def __init__(self, df, a, b, h, y0):
-        self.x = sp.symbols('x')
+        self.x = sp.symbols("x")
         self.df_expr = sp.sympify(df)
         self.a = a
         self.b = b
@@ -2372,13 +2454,15 @@ class Euler:
         step_header = f"**Metode Euler:**\n\n$h = {self.h}$\n\n"
         steps.append(step_header)
 
-        rows.append({
-            "i": 0,
-            "x_i": custom_round(xi),
-            "f(x_i)": custom_round(self.evaluate(self.df_expr, xi)),
-            "y_i": custom_round(y),
-            "Et (%)": ""
-        })
+        rows.append(
+            {
+                "i": 0,
+                "x_i": custom_round(xi),
+                "f(x_i)": custom_round(self.evaluate(self.df_expr, xi)),
+                "y_i": custom_round(y),
+                "Et (%)": "",
+            }
+        )
 
         for i in range(n_steps):
 
@@ -2393,24 +2477,22 @@ class Euler:
             et_val = ""
 
             if true_f is not None:
-                true_val = custom_round(
-                    self.evaluate(true_f, xi_next)
-                )
+                true_val = custom_round(self.evaluate(true_f, xi_next))
 
                 if true_val != 0:
-                    et_val = custom_round(
-                        abs((true_val - y) / true_val) * 100
-                    )
+                    et_val = custom_round(abs((true_val - y) / true_val) * 100)
                 else:
                     et_val = custom_round(abs(y) * 100)
 
-            rows.append({
-                "i": i + 1,
-                "x_i": xi_next,
-                "f(x_i)": fi,
-                "y_i": y,
-                "Et (%)": et_val,
-            })
+            rows.append(
+                {
+                    "i": i + 1,
+                    "x_i": xi_next,
+                    "f(x_i)": fi,
+                    "y_i": y,
+                    "Et (%)": et_val,
+                }
+            )
 
             step = f"**Langkah {i + 1}:**\n\n"
 
@@ -2418,35 +2500,25 @@ class Euler:
 
             step += f"f({custom_round(xi)}) &= {fi} \\\\\n"
 
-            step += (
-                f"y_{{{i+1}}} &= "
-                f"{y_old} + ({fi})({self.h}) \\\\\n"
-            )
+            step += f"y_{{{i+1}}} &= " f"{y_old} + ({fi})({self.h}) \\\\\n"
 
             step += f"&= {y}\n"
 
             step += "\\end{aligned}\n$$\n\n"
 
             if true_f is not None:
-                step += (
-                    f"Nilai sejati: "
-                    f"$y({xi_next}) = {true_val}$\n\n"
-                )
+                step += f"Nilai sejati: " f"$y({xi_next}) = {true_val}$\n\n"
 
             steps.append(step)
 
             xi = xi_next
 
-        return (
-            pd.DataFrame(rows),
-            steps,
-            custom_round(y),
-            err
-        )
+        return (pd.DataFrame(rows), steps, custom_round(y), err)
+
 
 class Heunn:
     def __init__(self, df, a, b, h, y0):
-        self.x = sp.symbols('x')
+        self.x = sp.symbols("x")
         self.df_expr = sp.sympify(df)
         self.a = a
         self.b = b
@@ -2480,33 +2552,26 @@ class Heunn:
         step_header = f"**Metode Heun:**\n\n$h = {self.h}$\n\n"
         steps.append(step_header)
 
-        rows.append({
-            "i": 0,
-            "x_i": custom_round(xi),
-            "f(x_i)": custom_round(self.evaluate(self.df_expr, xi)),
-            "f(x_i+h)": "",
-            "y_i": custom_round(y),
-            "Et (%)": ""
-        })
+        rows.append(
+            {
+                "i": 0,
+                "x_i": custom_round(xi),
+                "f(x_i)": custom_round(self.evaluate(self.df_expr, xi)),
+                "f(x_i+h)": "",
+                "y_i": custom_round(y),
+                "Et (%)": "",
+            }
+        )
 
         for i in range(n_steps):
 
-            fi = custom_round(
-                self.evaluate(self.df_expr, xi)
-            )
+            fi = custom_round(self.evaluate(self.df_expr, xi))
 
-            fi_next = custom_round(
-                self.evaluate(
-                    self.df_expr,
-                    xi + self.h
-                )
-            )
+            fi_next = custom_round(self.evaluate(self.df_expr, xi + self.h))
 
             y_old = custom_round(y)
 
-            y = custom_round(
-                y + (fi + fi_next) / 2 * self.h
-            )
+            y = custom_round(y + (fi + fi_next) / 2 * self.h)
 
             xi_next = custom_round(xi + self.h)
 
@@ -2514,39 +2579,31 @@ class Heunn:
 
             if true_f is not None:
 
-                true_val = custom_round(
-                    self.evaluate(true_f, xi_next)
-                )
+                true_val = custom_round(self.evaluate(true_f, xi_next))
 
                 if true_val != 0:
-                    et_val = custom_round(
-                        abs((true_val - y) / true_val) * 100
-                    )
+                    et_val = custom_round(abs((true_val - y) / true_val) * 100)
                 else:
                     et_val = custom_round(abs(y) * 100)
 
-            rows.append({
-                "i": i + 1,
-                "x_i": xi_next,
-                "f(x_i)": fi,
-                "f(x_i+h)": fi_next,
-                "y_i": y,
-                "Et (%)": et_val,
-            })
+            rows.append(
+                {
+                    "i": i + 1,
+                    "x_i": xi_next,
+                    "f(x_i)": fi,
+                    "f(x_i+h)": fi_next,
+                    "y_i": y,
+                    "Et (%)": et_val,
+                }
+            )
 
             step = f"**Langkah {i + 1}:**\n\n"
 
             step += "$$\n\\begin{aligned}\n"
 
-            step += (
-                f"f({custom_round(xi)}) "
-                f"&= {fi} \\\\\n"
-            )
+            step += f"f({custom_round(xi)}) " f"&= {fi} \\\\\n"
 
-            step += (
-                f"f({xi_next}) "
-                f"&= {fi_next} \\\\\n"
-            )
+            step += f"f({xi_next}) " f"&= {fi_next} \\\\\n"
 
             step += (
                 f"y_{{{i+1}}} &= "
@@ -2560,24 +2617,18 @@ class Heunn:
             step += "\\end{aligned}\n$$\n\n"
 
             if true_f is not None:
-                step += (
-                    f"Nilai sejati: "
-                    f"$y({xi_next}) = {true_val}$\n\n"
-                )
+                step += f"Nilai sejati: " f"$y({xi_next}) = {true_val}$\n\n"
 
             steps.append(step)
 
             xi = xi_next
 
-        return (
-            pd.DataFrame(rows),
-            steps,
-            custom_round(y),
-            err
-        )
+        return (pd.DataFrame(rows), steps, custom_round(y), err)
+
+
 class RungeKutta:
     def __init__(self, df, a, b, h, a2, y0):
-        self.x = sp.symbols('x')
+        self.x = sp.symbols("x")
         self.df_expr = sp.sympify(df)
         self.a = a
         self.b = b
@@ -2626,36 +2677,26 @@ class RungeKutta:
 
         steps.append(step_header)
 
-        rows.append({
-            "i": 0,
-            "x_i": custom_round(xi),
-            "k1": "",
-            "k2": "",
-            "y_i": custom_round(y),
-            "Et (%)": ""
-        })
+        rows.append(
+            {
+                "i": 0,
+                "x_i": custom_round(xi),
+                "k1": "",
+                "k2": "",
+                "y_i": custom_round(y),
+                "Et (%)": "",
+            }
+        )
 
         for i in range(n_steps):
 
-            k1 = custom_round(
-                self.evaluate(self.df_expr, xi)
-            )
+            k1 = custom_round(self.evaluate(self.df_expr, xi))
 
-            k2 = custom_round(
-                self.evaluate(
-                    self.df_expr,
-                    xi + p * self.h
-                )
-            )
+            k2 = custom_round(self.evaluate(self.df_expr, xi + p * self.h))
 
             y_old = custom_round(y)
 
-            y = custom_round(
-                y + (
-                    a1 * k1 +
-                    self.a2 * k2
-                ) * self.h
-            )
+            y = custom_round(y + (a1 * k1 + self.a2 * k2) * self.h)
 
             xi_next = custom_round(xi + self.h)
 
@@ -2663,46 +2704,33 @@ class RungeKutta:
 
             if true_f is not None:
 
-                true_val = custom_round(
-                    self.evaluate(true_f, xi_next)
-                )
+                true_val = custom_round(self.evaluate(true_f, xi_next))
 
                 if true_val != 0:
-                    et_val = custom_round(
-                        abs((true_val - y) / true_val) * 100
-                    )
+                    et_val = custom_round(abs((true_val - y) / true_val) * 100)
                 else:
                     et_val = custom_round(abs(y) * 100)
 
-            rows.append({
-                "i": i + 1,
-                "x_i": xi_next,
-                "k1": k1,
-                "k2": k2,
-                "y_i": y,
-                "Et (%)": et_val,
-            })
+            rows.append(
+                {
+                    "i": i + 1,
+                    "x_i": xi_next,
+                    "k1": k1,
+                    "k2": k2,
+                    "y_i": y,
+                    "Et (%)": et_val,
+                }
+            )
 
             step = f"**Langkah {i + 1}:**\n\n"
 
             step += "$$\n\\begin{aligned}\n"
 
-            step += (
-                f"k_1 &= "
-                f"f({custom_round(xi)}) "
-                f"= {k1} \\\\\n"
-            )
+            step += f"k_1 &= " f"f({custom_round(xi)}) " f"= {k1} \\\\\n"
 
-            step += (
-                f"k_2 &= "
-                f"f({custom_round(xi)} + "
-                f"{p} \\cdot {self.h}) \\\\\n"
-            )
+            step += f"k_2 &= " f"f({custom_round(xi)} + " f"{p} \\cdot {self.h}) \\\\\n"
 
-            step += (
-                f"&= f({custom_round(xi + p * self.h)}) "
-                f"= {k2} \\\\\n"
-            )
+            step += f"&= f({custom_round(xi + p * self.h)}) " f"= {k2} \\\\\n"
 
             step += (
                 f"y_{{{i+1}}} &= "
@@ -2717,18 +2745,10 @@ class RungeKutta:
             step += "\\end{aligned}\n$$\n\n"
 
             if true_f is not None:
-                step += (
-                    f"Nilai sejati: "
-                    f"$y({xi_next}) = {true_val}$\n\n"
-                )
+                step += f"Nilai sejati: " f"$y({xi_next}) = {true_val}$\n\n"
 
             steps.append(step)
 
             xi = xi_next
 
-        return (
-            pd.DataFrame(rows),
-            steps,
-            custom_round(y),
-            err
-        )
+        return (pd.DataFrame(rows), steps, custom_round(y), err)
