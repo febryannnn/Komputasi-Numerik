@@ -1,7 +1,8 @@
-import sympy as sp
-import pandas as pd
-from utils import custom_round, Ea, Et, sign
 import numpy as np
+import pandas as pd
+import sympy as sp
+
+from utils import Ea, Et, custom_round, sign
 
 
 class BiSection:
@@ -640,7 +641,8 @@ class PolynomFactorization:
             x1, x2 = self.ABC(a=A2, b=A1, c=A0)
 
             rows = [{"Iterasi": 0, "Info": "Rumus ABC langsung"}]
-            steps = [f"""
+            steps = [
+                f"""
 **Langkah:**
 
 $$
@@ -649,7 +651,8 @@ x &= \\frac{{-b \\pm \\sqrt{{b^2 - 4ac}}}}{{2a}} \\\\
 a &= {A2}, \\quad b = {A1}, \\quad c = {A0}
 \\end{{aligned}}
 $$
-"""]
+"""
+            ]
             return rows, steps, (x1, x2), None
 
         elif degree == 3:
@@ -1107,11 +1110,13 @@ class Jacobi:
         x_new = x.copy()
 
         # initial value
-        rows.append({"Iterasi": 0, **{f"x{i+1}": custom_round(x[i]) for i in range(m)}})
+        rows.append(
+            {"Iterasi": 0, **{f"x{i + 1}": custom_round(x[i]) for i in range(m)}}
+        )
         step = f"**Iterasi 0:**\n\n"
         step += "$$\n\\begin{aligned}\n"
         for i in range(m):
-            step += f"x_{{{i+1}}} &= 0"
+            step += f"x_{{{i + 1}}} &= 0"
             if i < m - 1:
                 step += " \\\\\n"
         step += "\n\\end{aligned}\n$$\n\n"
@@ -1127,7 +1132,7 @@ class Jacobi:
 
             row = {"Iterasi": iter_num + 1}
             for i in range(m):
-                row[f"x{i+1}"] = custom_round(x_new[i])
+                row[f"x{i + 1}"] = custom_round(x_new[i])
             rows.append(row)
 
             step = f"**Iterasi {iter_num + 1}:**\n\n"
@@ -1140,7 +1145,7 @@ class Jacobi:
                         if i != j
                     ]
                 )
-                step += f"x_{{{i+1}}} &= \\frac{{{self.B[i]} - {sum_parts}}}{{{self.A[i][i]}}} = {custom_round(x_new[i])}"
+                step += f"x_{{{i + 1}}} &= \\frac{{{self.B[i]} - {sum_parts}}}{{{self.A[i][i]}}} = {custom_round(x_new[i])}"
                 if i < m - 1:
                     step += " \\\\[1em]\n"
             step += "\n\\end{aligned}\n$$\n\n"
@@ -1185,11 +1190,13 @@ class GaussSeidel:
         x_new = x.copy()
 
         # initial value
-        rows.append({"Iterasi": 0, **{f"x{i+1}": custom_round(x[i]) for i in range(m)}})
+        rows.append(
+            {"Iterasi": 0, **{f"x{i + 1}": custom_round(x[i]) for i in range(m)}}
+        )
         step = f"**Iterasi 0:**\n\n"
         step += "$$\n\\begin{aligned}\n"
         for i in range(m):
-            step += f"x_{{{i+1}}} &= 0"
+            step += f"x_{{{i + 1}}} &= 0"
             if i < m - 1:
                 step += " \\\\\n"
         step += "\n\\end{aligned}\n$$\n\n"
@@ -1213,7 +1220,7 @@ class GaussSeidel:
                 x_new[i] = (self.B[i] - sum_v) / self.A[i][i]
 
                 sum_parts = " - ".join(sum_parts_list)
-                step += f"x_{{{i+1}}} &= \\frac{{{self.B[i]} - {sum_parts}}}{{{self.A[i][i]}}} = {custom_round(x_new[i])}"
+                step += f"x_{{{i + 1}}} &= \\frac{{{self.B[i]} - {sum_parts}}}{{{self.A[i][i]}}} = {custom_round(x_new[i])}"
                 if i < m - 1:
                     step += " \\\\[1em]\n"
 
@@ -1222,7 +1229,7 @@ class GaussSeidel:
 
             row = {"Iterasi": iter_num + 1}
             for i in range(m):
-                row[f"x{i+1}"] = custom_round(x_new[i])
+                row[f"x{i + 1}"] = custom_round(x_new[i])
             rows.append(row)
 
             converged = True
@@ -1260,16 +1267,18 @@ class NewtonInterpolation:
         diff_table = [[0 for _ in range(self.n - 1)] for _ in range(self.n)]
 
         for i in range(self.n - 1):
-            diff_table[i][0] = (self.data[i + 1][1] - self.data[i][1]) / (
-                self.data[i + 1][0] - self.data[i][0]
+            diff_table[i][0] = custom_round(
+                (self.data[i + 1][1] - self.data[i][1])
+                / (self.data[i + 1][0] - self.data[i][0])
             )
 
             diff_table[i][0] = custom_round(diff_table[i][0])
 
         for i in range(1, self.n - 1):
             for j in range(self.n - i - 1):
-                diff_table[j][i] = (diff_table[j + 1][i - 1] - diff_table[j][i - 1]) / (
-                    self.data[j + i + 1][0] - self.data[j][0]
+                diff_table[j][i] = custom_round(
+                    (diff_table[j + 1][i - 1] - diff_table[j][i - 1])
+                    / (self.data[j + i + 1][0] - self.data[j][0])
                 )
 
                 diff_table[j][i] = custom_round(diff_table[j][i])
@@ -1436,7 +1445,7 @@ class NewtonGregoryInterpolation:
         for i in range(self.n):
             row = {"x": self.data[i][0], "y": self.data[i][1]}
             for j in range(self.n - 1):
-                col_label = f"Δ{j+1}y"
+                col_label = f"Δ{j + 1}y"
                 row[col_label] = table[i][j] if table[i][j] != 0 else np.nan
             rows.append(row)
 
@@ -1477,14 +1486,15 @@ class NewtonGregoryInterpolation:
                             for j in range(k)
                         ]
                     )
-                    step2 += f"& && \\; + \\frac{{{s_parts}}}{{{k}!}} \\; ({custom_round(table[idx][i])}) \\nonumber {f"\\\\[0.5em]" if i < num_terms - 1 else ''}\n"
+                    step2 += f"& && \\; + \\frac{{{s_parts}}}{{{k}!}} \\; ({custom_round(table[idx][i])}) \\nonumber {f'\\\\[0.5em]' if i < num_terms - 1 else ''}\n"
                 step2 += "\\end{alignat}\n$$\n\n"
 
                 step2 += "$$\n\\begin{aligned}\n"
-                step2 += f"P({self.x}) &= {self.data[idx][1]} {sign(term_temp[0]) if len(term_temp) > 0 else ''}" + " ".join(
-                    f"{sign(term_temp[i])} {term_temp[i]}" for i in range(num_terms)
-                ).lstrip(
-                    "+ "
+                step2 += (
+                    f"P({self.x}) &= {self.data[idx][1]} {sign(term_temp[0]) if len(term_temp) > 0 else ''}"
+                    + " ".join(
+                        f"{sign(term_temp[i])} {term_temp[i]}" for i in range(num_terms)
+                    ).lstrip("+ ")
                 )
                 step2 += f" \\\\\n&= {res}\n"
                 step2 += "\n\\end{aligned}\n$$\n\n"
@@ -1516,16 +1526,17 @@ class NewtonGregoryInterpolation:
                             for mm in range(k)
                         ]
                     )
-                    step2 += f"& && + \\; \\frac{{{s_parts}}}{{{k}!}} \\; ({custom_round(table[i][j])}) \\nonumber {f"\\\\[0.5em]" if i > 0 else ''}\n"
+                    step2 += f"& && + \\; \\frac{{{s_parts}}}{{{k}!}} \\; ({custom_round(table[i][j])}) \\nonumber {f'\\\\[0.5em]' if i > 0 else ''}\n"
                     j += 1
                 step2 += "\\end{alignat}\n$$\n\n"
 
                 step2 += "$$\n\\begin{aligned}\n"
-                step2 += f"P({self.x}) &= {self.data[idx][1]} {sign(term_temp[0]) if len(term_temp) > 0 else ''}" + " ".join(
-                    f"{sign(term_temp[i])} {term_temp[i]}"
-                    for i in range(len(term_temp))
-                ).lstrip(
-                    "+ "
+                step2 += (
+                    f"P({self.x}) &= {self.data[idx][1]} {sign(term_temp[0]) if len(term_temp) > 0 else ''}"
+                    + " ".join(
+                        f"{sign(term_temp[i])} {term_temp[i]}"
+                        for i in range(len(term_temp))
+                    ).lstrip("+ ")
                 )
                 step2 += f" \\\\\n&= {res}\n"
                 step2 += "\n\\end{aligned}\n$$\n\n"
@@ -1582,7 +1593,7 @@ class StirlingInterpolation:
         for i in range(self.n):
             row = {"x": self.data[i][0], "y": self.data[i][1]}
             for j in range(self.n - 1):
-                col_label = f"Δ{j+1}y"
+                col_label = f"Δ{j + 1}y"
                 row[col_label] = table[i][j] if table[i][j] != 0 else np.nan
             rows.append(row)
 
@@ -1714,7 +1725,7 @@ class BesselInterpolation:
         for i in range(self.n):
             row = {"x": self.data[i][0], "y": self.data[i][1]}
             for j in range(1, self.n - i):
-                col_label = f"Δ{j+1}y"
+                col_label = f"Δ{j + 1}y"
                 row[col_label] = table[i][j] if table[i][j] != 0 else np.nan
             rows.append(row)
 
@@ -1744,7 +1755,7 @@ class BesselInterpolation:
                 num_parts.append(f"({u})")
                 for k in range(1, (term // 2) + 1):
                     coef *= u**2 - ((2 * k - 1) ** 2) / 4
-                    num_parts.append(f"(({u})^2 - \\frac{{{(2 * k - 1)**2}}}{{4}})")
+                    num_parts.append(f"(({u})^2 - \\frac{{{(2 * k - 1) ** 2}}}{{4}})")
 
                 curr_idx -= 1
 
@@ -1756,7 +1767,7 @@ class BesselInterpolation:
                 coef = 1
                 for k in range(1, (term // 2) + 1):
                     coef *= u**2 - ((2 * k - 1) ** 2) / 4
-                    num_parts.append(f"(({u})^2 - \\frac{{{(2 * k - 1)**2}}}{{4}})")
+                    num_parts.append(f"(({u})^2 - \\frac{{{(2 * k - 1) ** 2}}}{{4}})")
 
             term_value = custom_round((coef * diff_val) / self.factorial(term))
             term_temp.append(term_value)
@@ -1832,7 +1843,7 @@ class NewtonGregoryDifferentiation:
         for i in range(self.n):
             row = {"x": self.data[i][0], "y": self.data[i][1]}
             for j in range(self.n - 1):
-                col_label = f"Δ{j+1}y"
+                col_label = f"Δ{j + 1}y"
                 row[col_label] = table[i][j] if table[i][j] != 0 else np.nan
             rows.append(row)
 
@@ -2431,89 +2442,96 @@ class Euler:
         return float(expr.subs(self.x, val))
 
     def solve(self):
-        rows = []
+        rows1 = []
+        rows2 = []
         steps = []
         err = None
 
-        # Exact solution
         try:
+            # true function
             F = sp.integrate(self.df_expr)
-
-            C = self.y0 - F.subs(self.x, self.a)
-
+            C = self.y0 - F.subs(self.x, self.a)  # constant with y0
             true_f = F + C
-
         except Exception:
             true_f = None
 
         n_steps = int((self.b - self.a) / self.h)
-
         y = self.y0
         xi = self.a
 
-        step_header = f"**Metode Euler:**\n\n$h = {self.h}$\n\n"
-        steps.append(step_header)
+        step = "**Metode Euler:**\n\n"
+        step += "$$\n\\begin{aligned}\n"
+        step += f"h &= {self.h} \\\\[0.5em]\n"
+        step += f"(x_0, y_0) &= ({self.a}, {self.y0}) \\\\[0.5em]\n"
+        step += (
+            f"\\frac{{dy}}{{dx}} = F(x_i, y_i) &= {sp.latex(self.df_expr)} \\\\[1em]\n"
+        )
+        step += f"f(x) &= {sp.latex(true_f)} \\\\[0.5em]\n"
+        step += "\\end{aligned}\n$$\n\n"
+        steps.append(step)
 
-        rows.append(
+        rows1.append(
             {
                 "i": 0,
                 "x_i": custom_round(xi),
-                "f(x_i)": custom_round(self.evaluate(self.df_expr, xi)),
-                "y_i": custom_round(y),
-                "Et (%)": "",
+                "F(x_i, y_i)": custom_round(self.evaluate(self.df_expr, xi)),
+                "f(x_i)": custom_round(y),
             }
         )
 
+        # table f and df
+        idx = 1
+        for i in np.arange(self.a + self.h, self.b + self.h, self.h):
+            temp_f = self.evaluate(true_f, i)
+            temp_df = self.evaluate(self.df_expr, i)
+            rows1.append(
+                {
+                    "i": idx,
+                    "x_i": custom_round(i),
+                    "F(x_i, y_i)": custom_round(temp_df),
+                    "f(x_i)": custom_round(temp_f),
+                }
+            )
+            idx += 1
+
+        rows2.append({"i": 0, "x_i": self.a, "y_i": self.y0, "Et (%)": np.nan})
+
         for i in range(n_steps):
-
-            fi = custom_round(self.evaluate(self.df_expr, xi))
-
+            df = custom_round(self.evaluate(self.df_expr, xi))
             y_old = custom_round(y)
-
-            y = custom_round(y + fi * self.h)
-
+            y = custom_round(y + df * self.h)
             xi_next = custom_round(xi + self.h)
-
-            et_val = ""
-
+            et_val = np.nan
             if true_f is not None:
                 true_val = custom_round(self.evaluate(true_f, xi_next))
+                et_val = Et(true_val, y)
 
-                if true_val != 0:
-                    et_val = custom_round(abs((true_val - y) / true_val) * 100)
-                else:
-                    et_val = custom_round(abs(y) * 100)
-
-            rows.append(
+            rows2.append(
                 {
                     "i": i + 1,
                     "x_i": xi_next,
-                    "f(x_i)": fi,
                     "y_i": y,
                     "Et (%)": et_val,
                 }
             )
 
-            step = f"**Langkah {i + 1}:**\n\n"
-
+            step = f"**Iterasi {i + 1}:**\n\n"
             step += "$$\n\\begin{aligned}\n"
-
-            step += f"f({custom_round(xi)}) &= {fi} \\\\\n"
-
-            step += f"y_{{{i+1}}} &= " f"{y_old} + ({fi})({self.h}) \\\\\n"
-
+            step += f"F({custom_round(xi)}) &= {df} \\\\\n"
+            step += f"y_{{{i + 1}}} &= {y_old} + ({df})({self.h}) \\\\\n"
             step += f"&= {y}\n"
-
             step += "\\end{aligned}\n$$\n\n"
-
             if true_f is not None:
-                step += f"Nilai sejati: " f"$y({xi_next}) = {true_val}$\n\n"
-
+                step += "$$\n\\begin{aligned}\n"
+                step += f"f(x_{i + 1}) &= f({xi_next}) = {true_val} \\\\[1em]\n"
+                step += f"E_t &= \\left| \\frac{{{true_val} - ({y})}}{{{true_val}}} \\right| \\times 100\\% \\\\[1em]\n"
+                step += f"&= {et_val} \\% \\\\\n"
+                step += "\\end{aligned}\n$$\n\n"
             steps.append(step)
 
             xi = xi_next
 
-        return (pd.DataFrame(rows), steps, custom_round(y), err)
+        return (pd.DataFrame(rows1), pd.DataFrame(rows2), steps, custom_round(y), err)
 
 
 class Heunn:
@@ -2529,101 +2547,108 @@ class Heunn:
         return float(expr.subs(self.x, val))
 
     def solve(self):
-        rows = []
+        rows1 = []
+        rows2 = []
         steps = []
         err = None
 
         # Exact solution
         try:
             F = sp.integrate(self.df_expr)
-
             C = self.y0 - F.subs(self.x, self.a)
-
             true_f = F + C
-
         except Exception:
             true_f = None
 
         n_steps = int((self.b - self.a) / self.h)
-
         y = self.y0
         xi = self.a
 
-        step_header = f"**Metode Heun:**\n\n$h = {self.h}$\n\n"
-        steps.append(step_header)
+        step = "**Metode Heunn:**\n\n"
+        step += "$$\n\\begin{aligned}\n"
+        step += f"h &= {self.h} \\\\[0.5em]\n"
+        step += f"(x_0, y_0) &= ({self.a}, {self.y0}) \\\\[0.5em]\n"
+        step += (
+            f"\\frac{{dy}}{{dx}} = F(x_i, y_i) &= {sp.latex(self.df_expr)} \\\\[1em]\n"
+        )
+        step += f"f(x) &= {sp.latex(true_f)} \\\\[0.5em]\n"
+        step += "\\end{aligned}\n$$\n\n"
+        steps.append(step)
 
-        rows.append(
+        rows1.append(
             {
                 "i": 0,
                 "x_i": custom_round(xi),
-                "f(x_i)": custom_round(self.evaluate(self.df_expr, xi)),
-                "f(x_i+h)": "",
-                "y_i": custom_round(y),
-                "Et (%)": "",
+                "F(x_i, y_i)": custom_round(self.evaluate(self.df_expr, xi)),
+                "f(x_i)": custom_round(y),
+            }
+        )
+
+        # table f and df
+        idx = 1
+        for i in np.arange(self.a + self.h, self.b + self.h, self.h):
+            temp_f = self.evaluate(true_f, i)
+            temp_df = self.evaluate(self.df_expr, i)
+            rows1.append(
+                {
+                    "i": idx,
+                    "x_i": custom_round(i),
+                    "F(x_i, y_i)": custom_round(temp_df),
+                    "f(x_i)": custom_round(temp_f),
+                }
+            )
+            idx += 1
+
+        rows2.append(
+            {
+                "i": 0,
+                "x_i": self.a,
+                "y_i": self.y0,
+                "Et (%)": np.nan,
             }
         )
 
         for i in range(n_steps):
-
-            fi = custom_round(self.evaluate(self.df_expr, xi))
-
-            fi_next = custom_round(self.evaluate(self.df_expr, xi + self.h))
-
+            df_1 = custom_round(self.evaluate(self.df_expr, xi))
+            df_2 = custom_round(self.evaluate(self.df_expr, xi + self.h))
             y_old = custom_round(y)
-
-            y = custom_round(y + (fi + fi_next) / 2 * self.h)
-
+            y = custom_round(y + ((df_1 + df_2) / 2) * self.h)
             xi_next = custom_round(xi + self.h)
-
-            et_val = ""
-
+            et_val = np.nan
             if true_f is not None:
-
                 true_val = custom_round(self.evaluate(true_f, xi_next))
+                et_val = Et(true_val, y)
 
-                if true_val != 0:
-                    et_val = custom_round(abs((true_val - y) / true_val) * 100)
-                else:
-                    et_val = custom_round(abs(y) * 100)
-
-            rows.append(
+            rows2.append(
                 {
                     "i": i + 1,
                     "x_i": xi_next,
-                    "f(x_i)": fi,
-                    "f(x_i+h)": fi_next,
                     "y_i": y,
                     "Et (%)": et_val,
                 }
             )
 
-            step = f"**Langkah {i + 1}:**\n\n"
-
+            step = f"**Iterasi {i + 1}:**\n\n"
             step += "$$\n\\begin{aligned}\n"
-
-            step += f"f({custom_round(xi)}) " f"&= {fi} \\\\\n"
-
-            step += f"f({xi_next}) " f"&= {fi_next} \\\\\n"
-
+            step += f"\\frac{{dy}}{{dx}} = F({custom_round(xi)}) &= {df_1} \\\\\n"
+            step += f"F({custom_round(xi + self.h)}) &= {df_2} \\\\\n"
             step += (
-                f"y_{{{i+1}}} &= "
-                f"{y_old} + "
-                f"\\frac{{{fi} + {fi_next}}}{{2}}"
-                f"({self.h}) \\\\\n"
+                f"y_{{{i + 1}}} &= "
+                f"{y_old} + \\frac{{{df_1} {sign(df_2)} {df_2}}}{2} \\times {self.h} \\\\\n"
             )
-
             step += f"&= {y}\n"
-
             step += "\\end{aligned}\n$$\n\n"
-
             if true_f is not None:
-                step += f"Nilai sejati: " f"$y({xi_next}) = {true_val}$\n\n"
-
+                step += "$$\n\\begin{aligned}\n"
+                step += f"f(x_{i + 1}) &= f({xi_next}) = {true_val} \\\\[1em]\n"
+                step += f"E_t &= \\left| \\frac{{{true_val} - ({y})}}{{{true_val}}} \\right| \\times 100\\% \\\\[1em]\n"
+                step += f"&= {et_val} \\% \\\\\n"
+                step += "\\end{aligned}\n$$\n\n"
             steps.append(step)
 
             xi = xi_next
 
-        return (pd.DataFrame(rows), steps, custom_round(y), err)
+        return (pd.DataFrame(rows1), pd.DataFrame(rows2), steps, custom_round(y), err)
 
 
 class RungeKutta:
@@ -2640,115 +2665,111 @@ class RungeKutta:
         return float(expr.subs(self.x, val))
 
     def solve(self):
-        rows = []
+        rows1 = []
+        rows2 = []
         steps = []
         err = None
 
         a1 = custom_round(1 - self.a2)
-
         p = custom_round(1 / (2 * self.a2))
 
-        q = p
-
-        # Exact solution
+        # true function from integral and y0
         try:
             F = sp.integrate(self.df_expr)
-
             C = self.y0 - F.subs(self.x, self.a)
-
             true_f = F + C
-
         except Exception:
             true_f = None
 
         n_steps = int((self.b - self.a) / self.h)
-
         y = self.y0
-
         xi = self.a
 
-        step_header = f"**Metode Runge-Kutta:**\n\n"
-
-        step_header += (
-            f"$a_2 = {self.a2}$, "
-            f"$a_1 = 1 - a_2 = {a1}$, "
-            f"$p = q = \\frac{{1}}{{2a_2}} = {p}$\n\n"
+        step = "**Metode Runge-Kutta:**\n\n"
+        step += "$$\n\\begin{aligned}\n"
+        step += f"h &= {self.h} \\\\[0.5em]\n"
+        step += f"a_2 &= {self.a2} \\\\[0.5em]\n"
+        step += f"a_1 &= 1 - a_2 = {a1} \\\\[0.5em]\n"
+        step += f"p_1 = q_{{11}} &= \\frac{{1}}{{2a_2}} = {p} \\\\[1em]\n"
+        step += f"(x_0, y_0) &= ({self.a}, {self.y0}) \\\\[0.5em]\n"
+        step += (
+            f"\\frac{{dy}}{{dx}} = F(x_i, y_i) &= {sp.latex(self.df_expr)} \\\\[1em]\n"
         )
+        step += f"f(x) &= {sp.latex(true_f)} \\\\[0.5em]\n"
+        step += "\\end{aligned}\n$$\n\n"
+        steps.append(step)
 
-        steps.append(step_header)
-
-        rows.append(
+        rows1.append(
             {
                 "i": 0,
                 "x_i": custom_round(xi),
-                "k1": "",
-                "k2": "",
-                "y_i": custom_round(y),
-                "Et (%)": "",
+                "F(x_i, y_i)": custom_round(self.evaluate(self.df_expr, xi)),
+                "f(x_i)": custom_round(y),
+            }
+        )
+
+        # table f and df
+        idx = 1
+        for i in np.arange(self.a + self.h, self.b + self.h, self.h):
+            temp_f = self.evaluate(true_f, i)
+            temp_df = self.evaluate(self.df_expr, i)
+            rows1.append(
+                {
+                    "i": idx,
+                    "x_i": custom_round(i),
+                    "F(x_i, y_i)": custom_round(temp_df),
+                    "f(x_i)": custom_round(temp_f),
+                }
+            )
+            idx += 1
+
+        rows2.append(
+            {
+                "i": 0,
+                "x_i": self.a,
+                "y_i": self.y0,
+                "Et (%)": np.nan,
             }
         )
 
         for i in range(n_steps):
-
             k1 = custom_round(self.evaluate(self.df_expr, xi))
-
             k2 = custom_round(self.evaluate(self.df_expr, xi + p * self.h))
-
             y_old = custom_round(y)
-
             y = custom_round(y + (a1 * k1 + self.a2 * k2) * self.h)
-
             xi_next = custom_round(xi + self.h)
-
-            et_val = ""
-
+            et_val = np.nan
             if true_f is not None:
-
                 true_val = custom_round(self.evaluate(true_f, xi_next))
+                et_val = Et(true_val, y)
 
-                if true_val != 0:
-                    et_val = custom_round(abs((true_val - y) / true_val) * 100)
-                else:
-                    et_val = custom_round(abs(y) * 100)
-
-            rows.append(
+            rows2.append(
                 {
                     "i": i + 1,
                     "x_i": xi_next,
-                    "k1": k1,
-                    "k2": k2,
                     "y_i": y,
                     "Et (%)": et_val,
                 }
             )
 
-            step = f"**Langkah {i + 1}:**\n\n"
-
+            step = f"**Iterasi {i + 1}:**\n\n"
             step += "$$\n\\begin{aligned}\n"
-
-            step += f"k_1 &= " f"f({custom_round(xi)}) " f"= {k1} \\\\\n"
-
-            step += f"k_2 &= " f"f({custom_round(xi)} + " f"{p} \\cdot {self.h}) \\\\\n"
-
-            step += f"&= f({custom_round(xi + p * self.h)}) " f"= {k2} \\\\\n"
-
+            step += f"k_1 &= F({xi}) = {k1} \\\\\n"
+            step += f"k_2 &= F({xi + p * self.h}) = {k2} \\\\\n"
             step += (
-                f"y_{{{i+1}}} &= "
-                f"{y_old} + "
-                f"({a1} \\cdot {k1} + "
-                f"{self.a2} \\cdot {k2})"
-                f"({self.h}) \\\\\n"
+                f"y_{{{i + 1}}} &= "
+                f"{y_old} + (({a1})({k1}) + ({self.a2})({k2})) \\times {self.h} \\\\\n"
             )
-
             step += f"&= {y}\n"
-
             step += "\\end{aligned}\n$$\n\n"
-
             if true_f is not None:
-                step += f"Nilai sejati: " f"$y({xi_next}) = {true_val}$\n\n"
-
+                step += "$$\n\\begin{aligned}\n"
+                step += f"f(x_{i + 1}) &= f({xi_next}) = {true_val} \\\\[1em]\n"
+                step += f"E_t &= \\left| \\frac{{{true_val} - ({y})}}{{{true_val}}} \\right| \\times 100\\% \\\\[1em]\n"
+                step += f"&= {et_val} \\% \\\\\n"
+                step += "\\end{aligned}\n$$\n\n"
             steps.append(step)
 
             xi = xi_next
 
-        return (pd.DataFrame(rows), steps, custom_round(y), err)
+        return (pd.DataFrame(rows1), pd.DataFrame(rows2), steps, custom_round(y), err)
