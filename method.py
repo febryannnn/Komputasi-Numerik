@@ -2084,7 +2084,6 @@ class Integration:
         self.b = b
 
     def solve(self):
-        rows = []
         steps = []
         err = None
 
@@ -2095,17 +2094,15 @@ class Integration:
             L = float(sp.integrate(self.f, (self.x, self.a, self.b)))
             L = custom_round(L)
         except Exception as e:
-            return pd.DataFrame(), [], None, f"Error saat integrasi: {str(e)}"
+            return None, [], None, f"Error saat integrasi: {str(e)}"
 
-        rows.append({"f(x)": str(self.f), "a": self.a, "b": self.b, "Hasil": L})
-
-        step = f"**Integrasi Analitik:**\n\n"
+        step = "**Integrasi:**\n\n"
         step += "$$\n\\begin{aligned}\n"
         step += f"\\int_{{{self.a}}}^{{{self.b}}} {sp.latex(self.f)} \\, dx &= {L}\n"
         step += "\\end{aligned}\n$$\n\n"
         steps.append(step)
 
-        return pd.DataFrame(rows), steps, L, err
+        return None, steps, L, err
 
 
 class TrapezoidalIntegration:
@@ -2128,15 +2125,15 @@ class TrapezoidalIntegration:
         if self.a > self.b:
             self.a, self.b = self.b, self.a
 
-        if self.n > 0:
+        if self.n > 1:
             # Multi-segment trapezoidal
             h = custom_round((self.b - self.a) / self.n)
             total = 0
-            step = f"**Trapezoidal Multi-Segmen (n={self.n}):**\n\n"
+            step = f"**Trapezoidal Multi-Segmen ($n = {self.n}$):**\n\n"
             step += f"$h = \\frac{{{self.b} - {self.a}}}{{{self.n}}} = {h}$\n\n"
 
-            step += "$$\n\\begin{aligned}\n"
-            step += f"I &= \\frac{{h}}{{2}} \\left[ f(x_0) + 2\\sum_{{i=1}}^{{n-1}} f(x_i) + f(x_n) \\right] \\\\\n"
+            step += "$$\n\\begin{alignat*}{2}\n"
+            step += "L & = \\frac{{h}}{{2}} && \\; \\left[ f(x_0) + 2\\sum_{{i=1}}^{{n-1}} f(x_i) + f(x_n) \\right] \\\\\n"
 
             for i in range(self.n + 1):
                 xi = custom_round(self.a + i * h)
@@ -2147,9 +2144,9 @@ class TrapezoidalIntegration:
                     total += 2 * fi
                 rows.append({"i": i, "x_i": xi, "f(x_i)": fi})
 
-            L = custom_round(h / 2 * total)
-            step += f"&= \\frac{{{h}}}{{2}} \\cdot {custom_round(total)} = {L}\n"
-            step += "\\end{aligned}\n$$\n\n"
+            L = custom_round(0.5 * h * total)
+            step += f"& = \\frac{{{h}}}{{2}} && \\; {custom_round(total)} = {L}\n"
+            step += "\\end{alignat*}\n$$\n\n"
             steps.append(step)
         else:
             # Single segment trapezoidal
@@ -2162,18 +2159,18 @@ class TrapezoidalIntegration:
 
             step = "**Trapezoidal (Segmen Tunggal):**\n\n"
             step += "$$\n\\begin{aligned}\n"
-            step += f"I &= \\frac{{b - a}}{{2}} \\left[ f(a) + f(b) \\right] \\\\\n"
-            step += f"&= \\frac{{{self.b} - {self.a}}}{{2}} \\left[ {fa} + {fb} \\right] = {L}\n"
+            step += "L &= \\frac{{b - a}}{{2}} \\, \\left( f(a) + f(b) \\right) \\\\\n"
+            step += f"&= \\frac{{{self.b} - {self.a}}}{{2}} \\, \\left( {fa} + {fb} \\right) = {L}\n"
             step += "\\end{aligned}\n$$\n\n"
             steps.append(step)
 
         if self.true_val != -1:
-            et = (
-                custom_round(abs((self.true_val - L) / self.true_val) * 100)
-                if self.true_val != 0
-                else custom_round(abs(L) * 100)
-            )
-            steps.append(f"$E_t = {et}\\%$")
+            et = Et(self.true_val, L)
+            step = "$$\n\\begin{aligned}\n"
+            step += f"E_t &= \\left| \\frac{{{self.true_val} - ({L})}}{{{self.true_val}}} \\right| \\times 100\\% \\\\[1em]\n"
+            step += f"&= {et} \\% \n"
+            step += "\\end{aligned}\n$$\n\n"
+            steps.append(step)
 
         return pd.DataFrame(rows), steps, L, err
 
@@ -2198,15 +2195,15 @@ class Simpson13Integration:
         if self.a > self.b:
             self.a, self.b = self.b, self.a
 
-        if self.n > 0:
+        if self.n > 1:
             # Multi-segment Simpson 1/3
             h = custom_round((self.b - self.a) / self.n)
             total = 0
 
-            step = f"**Simpson 1/3 Multi-Segmen (n={self.n}):**\n\n"
+            step = f"**Simpson 1/3 Multi-Segmen ($n = {self.n}$):**\n\n"
             step += f"$h = \\frac{{{self.b} - {self.a}}}{{{self.n}}} = {h}$\n\n"
             step += "$$\n\\begin{aligned}\n"
-            step += f"I &= \\frac{{h}}{{3}} \\left[ f(x_0) + 4\\sum_{{\\text{{ganjil}}}} f(x_i) + 2\\sum_{{\\text{{genap}}}} f(x_i) + f(x_n) \\right] \\\\\n"
+            step += "L &= \\frac{{h}}{{3}} \\left[ f(x_0) + 4\\sum_{{\\text{{ganjil}}}} f(x_i) + 2\\sum_{{\\text{{genap}}}} f(x_i) + f(x_n) \\right] \\\\\n"
 
             for i in range(self.n + 1):
                 xi = custom_round(self.a + i * h)
@@ -2220,7 +2217,7 @@ class Simpson13Integration:
                 rows.append({"i": i, "x_i": xi, "f(x_i)": fi})
 
             L = custom_round(h / 3 * total)
-            step += f"&= \\frac{{{h}}}{{3}} \\cdot {custom_round(total)} = {L}\n"
+            step += f"&= \\frac{{{h}}}{{3}} \\, {custom_round(total)} = {L}\n"
             step += "\\end{aligned}\n$$\n\n"
             steps.append(step)
         else:
@@ -2243,18 +2240,18 @@ class Simpson13Integration:
             step = "**Simpson 1/3 (Segmen Tunggal):**\n\n"
             step += f"$h = \\frac{{{self.b} - {self.a}}}{{2}} = {h}$\n\n"
             step += "$$\n\\begin{aligned}\n"
-            step += f"I &= \\frac{{h}}{{3}} \\left[ f(x_0) + 4f(x_1) + f(x_2) \\right] \\\\\n"
+            step += "L &= \\frac{{h}}{{3}} \\left[ f(x_0) + 4f(x_1) + f(x_2) \\right] \\\\\n"
             step += f"&= \\frac{{{h}}}{{3}} \\left[ {f0} + 4 \\cdot {f1} + {f2} \\right] = {L}\n"
             step += "\\end{aligned}\n$$\n\n"
             steps.append(step)
 
         if self.true_val != -1:
-            et = (
-                custom_round(abs((self.true_val - L) / self.true_val) * 100)
-                if self.true_val != 0
-                else custom_round(abs(L) * 100)
-            )
-            steps.append(f"$E_t = {et}\\%$")
+            et = Et(self.true_val, L)
+            step = "$$\n\\begin{aligned}\n"
+            step += f"E_t &= \\left| \\frac{{{self.true_val} - ({L})}}{{{self.true_val}}} \\right| \\times 100\\% \\\\[1em]\n"
+            step += f"&= {et} \\% \n"
+            step += "\\end{aligned}\n$$\n\n"
+            steps.append(step)
 
         return pd.DataFrame(rows), steps, L, err
 
@@ -2299,18 +2296,18 @@ class Simpson38Integration:
         step = "**Simpson 3/8:**\n\n"
         step += f"$h = \\frac{{{self.b} - {self.a}}}{{3}} = {h}$\n\n"
         step += "$$\n\\begin{aligned}\n"
-        step += f"I &= \\frac{{3h}}{{8}} \\left[ f(x_0) + 3f(x_1) + 3f(x_2) + f(x_3) \\right] \\\\\n"
-        step += f"&= \\frac{{3 \\cdot {h}}}{{8}} \\left[ {f0} + 3 \\cdot {f1} + 3 \\cdot {f2} + {f3} \\right] = {L}\n"
+        step += "L &= \\frac{{3h}}{{8}} \\left[ f(x_0) + 3f(x_1) + 3f(x_2) + f(x_3) \\right] \\\\\n"
+        step += f"&= \\frac{{3 \\times {h}}}{{8}} \\left[ {f0} + 3 \\times {f1} + 3 \\times {f2} + {f3} \\right] = {L}\n"
         step += "\\end{aligned}\n$$\n\n"
         steps.append(step)
 
         if self.true_val != -1:
-            et = (
-                custom_round(abs((self.true_val - L) / self.true_val) * 100)
-                if self.true_val != 0
-                else custom_round(abs(L) * 100)
-            )
-            steps.append(f"$E_t = {et}\\%$")
+            et = Et(self.true_val, L)
+            step = "$$\n\\begin{aligned}\n"
+            step += f"E_t &= \\left| \\frac{{{self.true_val} - ({L})}}{{{self.true_val}}} \\right| \\times 100\\% \\\\[1em]\n"
+            step += f"&= {et} \\% \n"
+            step += "\\end{aligned}\n$$\n\n"
+            steps.append(step)
 
         return pd.DataFrame(rows), steps, L, err
 
@@ -2321,7 +2318,7 @@ class RiemannIntegration:
         self.f = sp.sympify(f)
         self.a = a
         self.b = b
-        self.n = n
+        self.n = np.maximum(1, n)
         self.true_val = true_val
 
     def evaluate(self, val):
@@ -2341,7 +2338,7 @@ class RiemannIntegration:
         step = f"**Riemann (Left Sum, n={self.n}):**\n\n"
         step += f"$h = \\frac{{{self.b} - {self.a}}}{{{self.n}}} = {h}$\n\n"
         step += "$$\n\\begin{aligned}\n"
-        step += f"I &= h \\sum_{{i=0}}^{{n-1}} f(x_i) \\\\\n"
+        step += "L &= h \\sum_{{i=0}}^{{n-1}} f(x_i) \\\\\n"
 
         for i in range(self.n):
             xi = custom_round(self.a + i * h)
@@ -2350,17 +2347,17 @@ class RiemannIntegration:
             rows.append({"i": i, "x_i": xi, "f(x_i)": fi})
 
         L = custom_round(h * total)
-        step += f"&= {h} \\cdot {total} = {L}\n"
+        step += f"&= {h} \\times {total} = {L}\n"
         step += "\\end{aligned}\n$$\n\n"
         steps.append(step)
 
         if self.true_val != -1:
-            et = (
-                custom_round(abs((self.true_val - L) / self.true_val) * 100)
-                if self.true_val != 0
-                else custom_round(abs(L) * 100)
-            )
-            steps.append(f"$E_t = {et}\\%$")
+            et = Et(self.true_val, L)
+            step = "$$\n\\begin{aligned}\n"
+            step += f"E_t &= \\left| \\frac{{{self.true_val} - ({L})}}{{{self.true_val}}} \\right| \\times 100\\% \\\\[1em]\n"
+            step += f"&= {et} \\% \n"
+            step += "\\end{aligned}\n$$\n\n"
+            steps.append(step)
 
         return pd.DataFrame(rows), steps, L, err
 
@@ -2377,56 +2374,43 @@ class GaussIntegration:
         return float(self.f.subs(self.x, val))
 
     def solve(self):
-        rows = []
         steps = []
         err = None
 
         if self.a > self.b:
             self.a, self.b = self.b, self.a
 
-        # 2-point Gauss quadrature on [-1, 1]
-        t1 = custom_round(-1 / np.sqrt(3))
-        t2 = custom_round(1 / np.sqrt(3))
-        w1 = 1
-        w2 = 1
+        u = sp.symbols("u")
+        x_u = (self.b - self.a) * (u / 2) + (self.b + self.a) / 2
+        g_u = ((self.b - self.a) / 2) * self.f.subs(self.x, x_u)
 
-        # Transform to [a, b]
-        c1 = custom_round((self.b - self.a) / 2)
-        c2 = custom_round((self.a + self.b) / 2)
+        u1 = custom_round(-1 / np.sqrt(3))
+        u2 = custom_round(1 / np.sqrt(3))
 
-        x1 = custom_round(c1 * t1 + c2)
-        x2 = custom_round(c1 * t2 + c2)
+        g1 = custom_round(g_u.subs(u, u1))
+        g2 = custom_round(g_u.subs(u, u2))
 
-        f1 = custom_round(self.evaluate(x1))
-        f2 = custom_round(self.evaluate(x2))
-
-        L = custom_round(c1 * (w1 * f1 + w2 * f2))
-
-        rows.append({"t": t1, "x": x1, "f(x)": f1, "w": w1})
-        rows.append({"t": t2, "x": x2, "f(x)": f2, "w": w2})
+        L = custom_round(g1 + g2)
 
         step = "**Gauss Quadrature (2-point):**\n\n"
-        step += f"Transformasi: $x = \\frac{{{self.b} - {self.a}}}{{2}} t + \\frac{{{self.a} + {self.b}}}{{2}} = {c1} t + {c2}$\n\n"
-        step += f"Titik: $t_1 = {t1}$, $t_2 = {t2}$\n\n"
+        step += f"Transformasi: $\\; x = \\frac{{{self.b} - {self.a}}}{{2}} u + \\frac{{{self.a} + {self.b}}}{{2}} = {sp.latex(x_u)}$\n\n"
+        step += f"Fungsi $g(u)$: $\\; g(u) = \\frac{{{self.b} - {self.a}}}{{2}} f(x) = {sp.latex(g_u)}$\n\n"
+
         step += "$$\n\\begin{aligned}\n"
-        step += f"x_1 &= {c1} \\cdot ({t1}) + {c2} = {x1}, \\quad f(x_1) = {f1} \\\\\n"
-        step += (
-            f"x_2 &= {c1} \\cdot ({t2}) + {c2} = {x2}, \\quad f(x_2) = {f2} \\\\[1em]\n"
-        )
-        step += f"I &= \\frac{{b-a}}{{2}} [w_1 f(x_1) + w_2 f(x_2)] \\\\\n"
-        step += f"&= {c1} \\cdot [{w1} \\cdot {f1} + {w2} \\cdot {f2}] = {L}\n"
+        step += "L &= g\\left( \\frac{{1}}{{\\sqrt{{3}}}} \\right) + g\\left( - \\frac{{1}}{{\\sqrt{{3}}}} \\right) \\\\[1em]\n"
+        step += f"&= {g1} + {g2} = {L}\n"
         step += "\\end{aligned}\n$$\n\n"
         steps.append(step)
 
         if self.true_val != -1:
-            et = (
-                custom_round(abs((self.true_val - L) / self.true_val) * 100)
-                if self.true_val != 0
-                else custom_round(abs(L) * 100)
-            )
-            steps.append(f"$E_t = {et}\\%$")
+            et = Et(self.true_val, L)
+            step = "$$\n\\begin{aligned}\n"
+            step += f"E_t &= \\left| \\frac{{{self.true_val} - ({L})}}{{{self.true_val}}} \\right| \\times 100\\% \\\\[1em]\n"
+            step += f"&= {et} \\% \n"
+            step += "\\end{aligned}\n$$\n\n"
+            steps.append(step)
 
-        return pd.DataFrame(rows), steps, L, err
+        return None, steps, L, err
 
 
 class Euler:
