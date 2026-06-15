@@ -253,9 +253,13 @@ elif kategori == "Integrasi":
     fungsi = st.text_input("Fungsi $f(x)$", "x**2")
     a_val = st.number_input("Batas bawah $(a)$", value=0.0)
     b_val = st.number_input("Batas atas $(b)$", value=1.0)
-    if metode in ["Trapesium", "Simpson 1/3", "Riemann"]:
+    if metode in ["Trapesium", "Riemann"]:
         n_seg = st.number_input(
             "Jumlah segmen (0 atau 1 = single)", value=0, min_value=0
+        )
+    elif metode == "Simpson 1/3":
+        n_seg = st.number_input(
+            "Jumlah segmen (**harus kelipatan 2**)", value=0, min_value=0
         )
     true_val = st.number_input("Nilai Sebenarnya (kosongkan -1)", value=-1.0)
 
@@ -269,7 +273,6 @@ elif kategori == "ODE (Persamaan Diferensial)":
     a_val = st.number_input("$x$ awal $(a)$", value=0.0)
     b_val = st.number_input("$x$ akhir $(b)$", value=4.0)
     h_val = st.number_input("Step size ($h$)", value=0.5)
-    y0_val = st.number_input("Nilai awal $(y_0)$", value=1.0)
     a2_val = None
     if metode == "Runge-Kutta":
         a2_val = st.number_input("$a_2$", value=0.5)
@@ -399,15 +402,15 @@ if st.button("Hitung"):
     # -- ODE --
 
     elif metode == "Euler":
-        solver = Euler(str(fungsi), a_val, b_val, h_val, y0_val)
+        solver = Euler(str(fungsi), a_val, b_val, h_val)
         df1, df2, steps, result, err = solver.solve()
     elif metode == "Heunn":
-        solver = Heunn(str(fungsi), a_val, b_val, h_val, y0_val)
+        solver = Heunn(str(fungsi), a_val, b_val, h_val)
         df1, df2, steps, result, err = solver.solve()
     elif metode == "Runge-Kutta":
         if a2_val is None:
             a2_val = 0.5
-        solver = RungeKutta(str(fungsi), a_val, b_val, h_val, a2_val, y0_val)
+        solver = RungeKutta(str(fungsi), a_val, b_val, h_val, a2_val)
         df1, df2, steps, result, err = solver.solve()
 
     # ══════════════════════════════════════════════
