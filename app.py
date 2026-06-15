@@ -254,7 +254,9 @@ elif kategori == "Integrasi":
     a_val = st.number_input("Batas bawah $(a)$", value=0.0)
     b_val = st.number_input("Batas atas $(b)$", value=1.0)
     if metode in ["Trapesium", "Simpson 1/3", "Riemann"]:
-        n_seg = st.number_input("Jumlah segmen (0 = single)", value=0, min_value=0)
+        n_seg = st.number_input(
+            "Jumlah segmen (0 atau 1 = single)", value=0, min_value=0
+        )
     true_val = st.number_input("Nilai Sebenarnya (kosongkan -1)", value=-1.0)
 
 # -- ODE --
