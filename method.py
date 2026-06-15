@@ -2192,10 +2192,13 @@ class Simpson13Integration:
         steps = []
         err = None
 
+        if self.n != 0 and self.n % 2 != 0:
+            return None, None, None, "Jumlah segmen harus kelipatan 2"
+
         if self.a > self.b:
             self.a, self.b = self.b, self.a
 
-        if self.n > 1:
+        if self.n > 2:
             # Multi-segment Simpson 1/3
             h = custom_round((self.b - self.a) / self.n)
             total = 0
@@ -2414,16 +2417,18 @@ class GaussIntegration:
 
 
 class Euler:
-    def __init__(self, df, a, b, h, y0):
+    def __init__(self, df, a, b, h):
         self.x = sp.symbols("x")
         self.df_expr = sp.sympify(df)
         self.a = a
         self.b = b
         self.h = h
-        self.y0 = y0
 
     def evaluate(self, expr, val):
-        return float(expr.subs(self.x, val))
+        return custom_round(expr.subs(self.x, val))
+
+    def round_coeff(self, expr):
+        return expr.xreplace({n: custom_round(n) for n in expr.atoms(sp.Number)})
 
     def solve(self):
         rows1 = []
@@ -2431,22 +2436,18 @@ class Euler:
         steps = []
         err = None
 
-        try:
-            # true function
-            F = sp.integrate(self.df_expr)
-            C = self.y0 - F.subs(self.x, self.a)  # constant with y0
-            true_f = F + C
-        except Exception:
-            true_f = None
+        true_f = sp.integrate(self.df_expr)
+        true_f = self.round_coeff(true_f)
 
         n_steps = int((self.b - self.a) / self.h)
-        y = self.y0
         xi = self.a
+        y = self.evaluate(true_f, xi)
 
         step = "**Metode Euler:**\n\n"
+        step += "Asumsikan $\\int \\left( \\frac{{dy}}{{dx}} \\right) \\,dx = \\int F(x, y) \\,dx = f(x) + C, \\; C = 0$\n"
         step += "$$\n\\begin{aligned}\n"
         step += f"h &= {self.h} \\\\[0.5em]\n"
-        step += f"(x_0, y_0) &= ({self.a}, {self.y0}) \\\\[0.5em]\n"
+        step += f"(x_0, y_0) &= ({self.a}, {y}) \\\\[0.5em]\n"
         step += (
             f"\\frac{{dy}}{{dx}} = F(x_i, y_i) &= {sp.latex(self.df_expr)} \\\\[1em]\n"
         )
@@ -2478,7 +2479,7 @@ class Euler:
             )
             idx += 1
 
-        rows2.append({"i": 0, "x_i": self.a, "y_i": self.y0, "Et (%)": np.nan})
+        rows2.append({"i": 0, "x_i": self.a, "y_i": y, "Et (%)": np.nan})
 
         for i in range(n_steps):
             df = custom_round(self.evaluate(self.df_expr, xi))
@@ -2519,16 +2520,18 @@ class Euler:
 
 
 class Heunn:
-    def __init__(self, df, a, b, h, y0):
+    def __init__(self, df, a, b, h):
         self.x = sp.symbols("x")
         self.df_expr = sp.sympify(df)
         self.a = a
         self.b = b
         self.h = h
-        self.y0 = y0
 
     def evaluate(self, expr, val):
-        return float(expr.subs(self.x, val))
+        return custom_round(expr.subs(self.x, val))
+
+    def round_coeff(self, expr):
+        return expr.xreplace({n: custom_round(n) for n in expr.atoms(sp.Number)})
 
     def solve(self):
         rows1 = []
@@ -2536,22 +2539,18 @@ class Heunn:
         steps = []
         err = None
 
-        # Exact solution
-        try:
-            F = sp.integrate(self.df_expr)
-            C = self.y0 - F.subs(self.x, self.a)
-            true_f = F + C
-        except Exception:
-            true_f = None
+        true_f = sp.integrate(self.df_expr)
+        true_f = self.round_coeff(true_f)
 
         n_steps = int((self.b - self.a) / self.h)
-        y = self.y0
         xi = self.a
+        y = self.evaluate(true_f, xi)
 
         step = "**Metode Heunn:**\n\n"
+        step += "Asumsikan $\\int \\left( \\frac{{dy}}{{dx}} \\right) \\,dx = \\int F(x, y) \\,dx = f(x) + C, \\; C = 0$\n"
         step += "$$\n\\begin{aligned}\n"
         step += f"h &= {self.h} \\\\[0.5em]\n"
-        step += f"(x_0, y_0) &= ({self.a}, {self.y0}) \\\\[0.5em]\n"
+        step += f"(x_0, y_0) &= ({self.a}, {y}) \\\\[0.5em]\n"
         step += (
             f"\\frac{{dy}}{{dx}} = F(x_i, y_i) &= {sp.latex(self.df_expr)} \\\\[1em]\n"
         )
@@ -2587,7 +2586,7 @@ class Heunn:
             {
                 "i": 0,
                 "x_i": self.a,
-                "y_i": self.y0,
+                "y_i": y,
                 "Et (%)": np.nan,
             }
         )
@@ -2636,17 +2635,19 @@ class Heunn:
 
 
 class RungeKutta:
-    def __init__(self, df, a, b, h, a2, y0):
+    def __init__(self, df, a, b, h, a2):
         self.x = sp.symbols("x")
         self.df_expr = sp.sympify(df)
         self.a = a
         self.b = b
         self.h = h
         self.a2 = a2
-        self.y0 = y0
 
     def evaluate(self, expr, val):
-        return float(expr.subs(self.x, val))
+        return custom_round(expr.subs(self.x, val))
+
+    def round_coeff(self, expr):
+        return expr.xreplace({n: custom_round(n) for n in expr.atoms(sp.Number)})
 
     def solve(self):
         rows1 = []
@@ -2658,24 +2659,21 @@ class RungeKutta:
         p = custom_round(1 / (2 * self.a2))
 
         # true function from integral and y0
-        try:
-            F = sp.integrate(self.df_expr)
-            C = self.y0 - F.subs(self.x, self.a)
-            true_f = F + C
-        except Exception:
-            true_f = None
+        true_f = sp.integrate(self.df_expr)
+        true_f = self.round_coeff(true_f)
 
         n_steps = int((self.b - self.a) / self.h)
-        y = self.y0
         xi = self.a
+        y = self.evaluate(true_f, xi)
 
         step = "**Metode Runge-Kutta:**\n\n"
+        step += "Asumsikan $\\int \\left( \\frac{{dy}}{{dx}} \\right) \\,dx = \\int F(x, y) \\,dx = f(x) + C, \\; C = 0$\n"
         step += "$$\n\\begin{aligned}\n"
         step += f"h &= {self.h} \\\\[0.5em]\n"
         step += f"a_2 &= {self.a2} \\\\[0.5em]\n"
         step += f"a_1 &= 1 - a_2 = {a1} \\\\[0.5em]\n"
         step += f"p_1 = q_{{11}} &= \\frac{{1}}{{2a_2}} = {p} \\\\[1em]\n"
-        step += f"(x_0, y_0) &= ({self.a}, {self.y0}) \\\\[0.5em]\n"
+        step += f"(x_0, y_0) &= ({self.a}, {y}) \\\\[0.5em]\n"
         step += (
             f"\\frac{{dy}}{{dx}} = F(x_i, y_i) &= {sp.latex(self.df_expr)} \\\\[1em]\n"
         )
@@ -2711,7 +2709,7 @@ class RungeKutta:
             {
                 "i": 0,
                 "x_i": self.a,
-                "y_i": self.y0,
+                "y_i": y,
                 "Et (%)": np.nan,
             }
         )
