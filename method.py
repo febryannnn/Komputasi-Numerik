@@ -2400,7 +2400,7 @@ class GaussIntegration:
         step += f"Fungsi $g(u)$: $\\; g(u) = \\frac{{{self.b} - {self.a}}}{{2}} f(x) = {sp.latex(g_u)}$\n\n"
 
         step += "$$\n\\begin{aligned}\n"
-        step += "L &= g\\left( \\frac{{1}}{{\\sqrt{{3}}}} \\right) + g\\left( - \\frac{{1}}{{\\sqrt{{3}}}} \\right) \\\\[1em]\n"
+        step += "L &= g\\left( - \\frac{{1}}{{\\sqrt{{3}}}} \\right) + g\\left(\\frac{{1}}{{\\sqrt{{3}}}} \\right) \\\\[1em]\n"
         step += f"&= {g1} + {g2} = {L}\n"
         step += "\\end{aligned}\n$$\n\n"
         steps.append(step)
